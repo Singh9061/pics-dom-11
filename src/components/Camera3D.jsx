@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, ContactShadows, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
@@ -299,7 +299,7 @@ export default function Camera3D({ onReady }) {
   const groupRef = useRef();
   const apertureRef = useRef();
   const hasAnimated = useRef(false);
-  const [enableIdle, setEnableIdle] = React.useState(false);
+  const [enableIdle, setEnableIdle] = useState(false);
 
   const handleMounted = () => {
     if (hasAnimated.current || !groupRef.current || !apertureRef.current) return;
