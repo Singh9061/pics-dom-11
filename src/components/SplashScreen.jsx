@@ -12,13 +12,13 @@ export default function SplashScreen({ onFinish }) {
   const [camReady, setCamReady] = useState(false);
   const hasPlayed = useRef(false);
 
-  // Shutter click sound (short professional camera shutter)
+  // Shutter click sound
   const playShutter = () => {
     try {
       const audio = new Audio(
-        "https://cdn.pixabay.com/download/audio/2022/03/24/audio_5b4c0c5c5c.mp3?filename=camera-shutter-click-113888.mp3"
+        "https://orangefreesounds.com/wp-content/uploads/2022/03/Camera-sound.mp3"
       );
-      audio.volume = 0.55;
+      audio.volume = 0.6;
       audio.play().catch(() => {});
     } catch (e) {
       // silent fail if autoplay blocked
