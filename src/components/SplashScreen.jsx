@@ -1,101 +1,74 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { cameraImage } from "../Assets/cameraImage";
+import Camera3D from "./Camera3D";
 
 export default function SplashScreen({ onFinish }) {
   const rootRef = useRef(null);
-  const camWrapRef = useRef(null);
   const flashRef = useRef(null);
   const brandRef = useRef(null);
   const subRef = useRef(null);
   const lineRef = useRef(null);
+  const camContainerRef = useRef(null);
+  const [camReady, setCamReady] = useState(false);
+  const hasPlayed = useRef(false);
+
+  // Shutter click sound (short professional camera shutter)
+  const playShutter = () => {
+    try {
+      const audio = new Audio(
+        "https://cdn.pixabay.com/download/audio/2022/03/24/audio_5b4c0c5c5c.mp3?filename=camera-shutter-click-113888.mp3"
+      );
+      audio.volume = 0.55;
+      audio.play().catch(() => {});
+    } catch (e) {
+      // silent fail if autoplay blocked
+    }
+  };
 
   useEffect(() => {
+    if (!camReady || hasPlayed.current) return;
+    hasPlayed.current = true;
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => {
-          gsap.delayedCall(0.4, onFinish);
+          gsap.delayedCall(0.35, onFinish);
         },
       });
 
-      gsap.set(camWrapRef.current, {
-        opacity: 0,
-        scale: 0.5,
-        rotateY: -60,
-        rotateX: 20,
-        y: 90,
-        filter: "blur(14px)",
-      });
       gsap.set(flashRef.current, { opacity: 0 });
-      gsap.set(brandRef.current, { opacity: 0, y: 70, scale: 0.8 });
-      gsap.set(subRef.current, { opacity: 0, y: 25 });
+      gsap.set(brandRef.current, { opacity: 0, y: 60, scale: 0.85 });
+      gsap.set(subRef.current, { opacity: 0, y: 20 });
       gsap.set(lineRef.current, { scaleX: 0, opacity: 0 });
+      gsap.set(camContainerRef.current, { opacity: 1 });
 
-      // Camera flies in + 3D turn
-      tl.to(camWrapRef.current, {
-        opacity: 1,
-        scale: 1,
-        rotateY: 15,
-        rotateX: 8,
-        y: 0,
-        filter: "blur(0px)",
-        duration: 1.4,
-        ease: "power4.out",
-      });
+      // Brief hold so the 3D camera finish its own turn
+      tl.to({}, { duration: 0.35 });
 
-      // Extra turn
-      tl.to(camWrapRef.current, {
-        rotateY: -10,
-        duration: 0.75,
-        ease: "power2.inOut",
-      });
-
-      // Shutter click flash
+      // Shutter flash + sound
+      tl.add(() => playShutter());
       tl.to(flashRef.current, {
-        opacity: 0.95,
-        duration: 0.06,
+        opacity: 0.92,
+        duration: 0.05,
         ease: "power1.out",
       });
       tl.to(flashRef.current, {
         opacity: 0,
-        duration: 0.28,
+        duration: 0.32,
         ease: "power2.out",
       });
 
-      // Settle
-      tl.to(
-        camWrapRef.current,
-        {
-          rotateY: 0,
-          rotateX: 3,
-          duration: 0.55,
-          ease: "power2.out",
-        },
-        "-=0.15"
-      );
-
-      // Professional PICSDOM
+      // Professional PICSDOM (matching homepage hero style)
       tl.to(
         brandRef.current,
         {
           opacity: 1,
           y: 0,
           scale: 1,
-          duration: 0.95,
+          duration: 0.9,
           ease: "power3.out",
         },
-        "-=0.25"
-      );
-
-      tl.to(
-        subRef.current,
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.65,
-          ease: "power2.out",
-        },
-        "-=0.5"
+        "-=0.15"
       );
 
       tl.to(
@@ -103,24 +76,35 @@ export default function SplashScreen({ onFinish }) {
         {
           scaleX: 1,
           opacity: 1,
-          duration: 0.7,
+          duration: 0.65,
           ease: "power2.out",
         },
         "-=0.55"
       );
 
-      // Hold then fade
+      tl.to(
+        subRef.current,
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+        },
+        "-=0.45"
+      );
+
+      // Hold then elegant fade out
       tl.to(rootRef.current, {
         opacity: 0,
-        scale: 1.03,
-        duration: 0.75,
+        scale: 1.02,
+        duration: 0.7,
         ease: "power2.inOut",
-        delay: 1.0,
+        delay: 1.1,
       });
     }, rootRef);
 
     return () => ctx.revert();
-  }, [onFinish]);
+  }, [camReady, onFinish]);
 
   return (
     <div
@@ -128,7 +112,8 @@ export default function SplashScreen({ onFinish }) {
       className="fixed inset-0 z-10000 flex flex-col items-center justify-center bg-black overflow-hidden"
       style={{ perspective: "1400px" }}
     >
-      <div className="absolute h-[500px] w-[500px] rounded-full bg-gold/18 blur-3xl pointer-events-none" />
+      {/* Soft gold glow */}
+      <div className="absolute h-[520px] w-[520px] rounded-full bg-gold/15 blur-3xl pointer-events-none" />
 
       {/* Shutter flash */}
       <div
@@ -137,32 +122,22 @@ export default function SplashScreen({ onFinish }) {
       />
 
       <div className="relative z-10 flex flex-col items-center px-4">
-        {/* Camera with 3D transform */}
+        {/* Real 3D Camera */}
         <div
-          ref={camWrapRef}
-          className="mb-10 sm:mb-12"
-          style={{
-            transformStyle: "preserve-3d",
-            willChange: "transform",
-          }}
+          ref={camContainerRef}
+          className="mb-6 sm:mb-8 flex items-center justify-center"
         >
-          <img
-            src={cameraImage}
-            alt="Sony Alpha"
-            className="w-[260px] sm:w-[340px] md:w-[400px] h-auto object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.75)]"
-            draggable={false}
-            style={{ backfaceVisibility: "hidden" }}
-          />
+          <Camera3D onReady={() => setCamReady(true)} />
         </div>
 
-        {/* Professional brand block */}
+        {/* Professional brand block – same language as homepage hero */}
         <div className="flex flex-col items-center text-center">
           <h1
             ref={brandRef}
-            className="font-serif text-5xl sm:text-7xl md:text-8xl font-light tracking-[0.2em] text-white uppercase"
+            className="font-serif text-5xl sm:text-7xl md:text-8xl font-light tracking-[0.22em] text-white uppercase leading-none"
             style={{
               textShadow:
-                "0 0 50px rgba(197,168,128,0.4), 0 6px 35px rgba(0,0,0,0.6)",
+                "0 0 60px rgba(197,168,128,0.35), 0 8px 40px rgba(0,0,0,0.55)",
             }}
           >
             PICSDOM
@@ -170,14 +145,14 @@ export default function SplashScreen({ onFinish }) {
 
           <div
             ref={lineRef}
-            className="mt-4 mb-3 h-px w-28 origin-center bg-linear-to-r from-transparent via-gold to-transparent"
+            className="mt-5 mb-3 h-px w-32 origin-center bg-linear-to-r from-transparent via-gold to-transparent"
           />
 
           <p
             ref={subRef}
-            className="font-sans text-[10px] sm:text-xs uppercase tracking-[0.5em] text-gold/90"
+            className="font-sans text-[10px] sm:text-xs uppercase tracking-[0.45em] text-gold/90"
           >
-            Raebareli
+            Luxury Wedding & Heritage Photography · Raebareli
           </p>
         </div>
       </div>
