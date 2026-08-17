@@ -1,6 +1,33 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Component } from "react";
 import gsap from "gsap";
 import Camera3D from "./Camera3D";
+
+/** Catches 3D/WebGL crashes so the rest of the site still loads */
+class CameraErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error) {
+    console.warn("Camera3D crashed:", error);
+    this.props.onError?.();
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-[300px] h-[240px] sm:w-[400px] sm:h-[310px] md:w-[480px] md:h-[360px] flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full border-2 border-gold/40 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full border border-gold/60" />
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function SplashScreen({ onFinish }) {
   const rootRef = useRef(null);
@@ -11,8 +38,16 @@ export default function SplashScreen({ onFinish }) {
   const camContainerRef = useRef(null);
   const [camReady, setCamReady] = useState(false);
   const hasPlayed = useRef(false);
+  const finished = useRef(false);
 
-  // Shutter click sound
+  const safeFinish = () => {
+    if (finished.current) return;
+    finished.current = true;
+    try {
+      onFinish?.();
+    } catch (_) {}
+  };
+
   const playShutter = () => {
     try {
       const audio = new Audio(
@@ -21,9 +56,20 @@ export default function SplashScreen({ onFinish }) {
       audio.volume = 0.6;
       audio.play().catch(() => {});
     } catch (e) {
-      // silent fail if autoplay blocked
+      // silent fail
     }
   };
+
+  // Absolute fail-safe: never leave user on blank splash forever
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!hasPlayed.current) {
+        hasPlayed.current = true;
+        safeFinish();
+      }
+    }, 6000);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     if (!camReady || hasPlayed.current) return;
@@ -32,79 +78,87 @@ export default function SplashScreen({ onFinish }) {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => {
-          gsap.delayedCall(0.35, onFinish);
+          gsap.delayedCall(0.35, safeFinish);
         },
       });
 
-      gsap.set(flashRef.current, { opacity: 0 });
-      gsap.set(brandRef.current, { opacity: 0, y: 60, scale: 0.85 });
-      gsap.set(subRef.current, { opacity: 0, y: 20 });
-      gsap.set(lineRef.current, { scaleX: 0, opacity: 0 });
-      gsap.set(camContainerRef.current, { opacity: 1 });
+      if (flashRef.current) gsap.set(flashRef.current, { opacity: 0 });
+      if (brandRef.current) gsap.set(brandRef.current, { opacity: 0, y: 60, scale: 0.85 });
+      if (subRef.current) gsap.set(subRef.current, { opacity: 0, y: 20 });
+      if (lineRef.current) gsap.set(lineRef.current, { scaleX: 0, opacity: 0 });
+      if (camContainerRef.current) gsap.set(camContainerRef.current, { opacity: 1 });
 
-      // Brief hold so the 3D camera finish its own turn
       tl.to({}, { duration: 0.35 });
 
-      // Shutter flash + sound
       tl.add(() => playShutter());
-      tl.to(flashRef.current, {
-        opacity: 0.92,
-        duration: 0.05,
-        ease: "power1.out",
-      });
-      tl.to(flashRef.current, {
-        opacity: 0,
-        duration: 0.32,
-        ease: "power2.out",
-      });
-
-      // Professional PICSDOM (matching homepage hero style)
-      tl.to(
-        brandRef.current,
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.9,
-          ease: "power3.out",
-        },
-        "-=0.15"
-      );
-
-      tl.to(
-        lineRef.current,
-        {
-          scaleX: 1,
-          opacity: 1,
-          duration: 0.65,
+      if (flashRef.current) {
+        tl.to(flashRef.current, {
+          opacity: 0.92,
+          duration: 0.05,
+          ease: "power1.out",
+        });
+        tl.to(flashRef.current, {
+          opacity: 0,
+          duration: 0.32,
           ease: "power2.out",
-        },
-        "-=0.55"
-      );
+        });
+      }
 
-      tl.to(
-        subRef.current,
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          ease: "power2.out",
-        },
-        "-=0.45"
-      );
+      if (brandRef.current) {
+        tl.to(
+          brandRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.9,
+            ease: "power3.out",
+          },
+          "-=0.15"
+        );
+      }
 
-      // Hold then elegant fade out
-      tl.to(rootRef.current, {
-        opacity: 0,
-        scale: 1.02,
-        duration: 0.7,
-        ease: "power2.inOut",
-        delay: 1.1,
-      });
+      if (lineRef.current) {
+        tl.to(
+          lineRef.current,
+          {
+            scaleX: 1,
+            opacity: 1,
+            duration: 0.65,
+            ease: "power2.out",
+          },
+          "-=0.55"
+        );
+      }
+
+      if (subRef.current) {
+        tl.to(
+          subRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: "power2.out",
+          },
+          "-=0.45"
+        );
+      }
+
+      if (rootRef.current) {
+        tl.to(rootRef.current, {
+          opacity: 0,
+          scale: 1.02,
+          duration: 0.7,
+          ease: "power2.inOut",
+          delay: 1.1,
+        });
+      }
     }, rootRef);
 
     return () => ctx.revert();
-  }, [camReady, onFinish]);
+  }, [camReady]);
+
+  const markReady = () => setCamReady(true);
 
   return (
     <div
@@ -112,25 +166,23 @@ export default function SplashScreen({ onFinish }) {
       className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black overflow-hidden"
       style={{ perspective: "1400px" }}
     >
-      {/* Soft gold glow */}
       <div className="absolute h-[520px] w-[520px] rounded-full bg-gold/15 blur-3xl pointer-events-none" />
 
-      {/* Shutter flash */}
       <div
         ref={flashRef}
         className="pointer-events-none absolute inset-0 z-50 bg-white"
       />
 
       <div className="relative z-10 flex flex-col items-center px-4">
-        {/* Real 3D Camera */}
         <div
           ref={camContainerRef}
           className="mb-6 sm:mb-8 flex items-center justify-center"
         >
-          <Camera3D onReady={() => setCamReady(true)} />
+          <CameraErrorBoundary onError={markReady}>
+            <Camera3D onReady={markReady} />
+          </CameraErrorBoundary>
         </div>
 
-        {/* Professional brand block – same language as homepage hero */}
         <div className="flex flex-col items-center text-center">
           <h1
             ref={brandRef}
