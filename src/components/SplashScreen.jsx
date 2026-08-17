@@ -109,7 +109,7 @@ export default function SplashScreen({ onFinish }) {
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-10000 flex flex-col items-center justify-center bg-black overflow-hidden"
+      className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black overflow-hidden"
       style={{ perspective: "1400px" }}
     >
       {/* Soft gold glow */}
