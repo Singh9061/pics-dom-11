@@ -5,11 +5,11 @@ const AlbumCollection = lazy(() => import("../pageComponents/homepage/AlbumColle
 const MoreAboutSection = lazy(() => import("../pageComponents/homepage/MoreAboutSection"));
 
 const SectionSkeleton = () => (
-  <div className="w-full py-20 animate-pulse bg-bg-secondary/20 px-6">
+  <div className="w-full py-20 animate-pulse bg-surface/20 px-6">
     <div className="max-w-6xl mx-auto space-y-4">
-      <div className="h-6 w-1/4 bg-glass-border rounded" />
-      <div className="h-4 w-3/4 bg-glass-border rounded opacity-60" />
-      <div className="h-64 w-full bg-glass-border/40 rounded-xl mt-8" />
+      <div className="h-6 w-1/4 bg-border rounded" />
+      <div className="h-4 w-3/4 bg-border rounded opacity-60" />
+      <div className="h-64 w-full bg-border/40 rounded-xl mt-8" />
     </div>
   </div>
 );
