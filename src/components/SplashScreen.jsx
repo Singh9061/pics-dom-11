@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
 
-/* Same aperture icon as Navbar – the O in DOM */
 const CameraApertureIcon = ({ className = "w-8 h-8" }) => (
   <svg
     viewBox="0 0 100 100"
@@ -10,7 +9,12 @@ const CameraApertureIcon = ({ className = "w-8 h-8" }) => (
     aria-hidden="true"
   >
     <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="4" />
-    <polygon points="50,15 82,34 70,72 50,85 18,66 30,28" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <polygon
+      points="50,15 82,34 70,72 50,85 18,66 30,28"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
     <path d="M50 10 L78 36 L62 38 Z" />
     <path d="M85 38 L72 74 L58 62 Z" />
     <path d="M72 76 L36 84 L40 68 Z" />
@@ -23,11 +27,13 @@ const CameraApertureIcon = ({ className = "w-8 h-8" }) => (
 export default function SplashScreen({ onFinish }) {
   const rootRef = useRef(null);
   const welcomeRef = useRef(null);
-  const brandRef = useRef(null);
+  const picsRef = useRef(null);
+  const dRef = useRef(null);
+  const mRef = useRef(null);
+  const raeRef = useRef(null);
   const familyRef = useRef(null);
   const lineRef = useRef(null);
   const tagRef = useRef(null);
-  const apertureWrapRef = useRef(null);
   const apertureRef = useRef(null);
   const ring1Ref = useRef(null);
   const ring2Ref = useRef(null);
@@ -40,259 +46,242 @@ export default function SplashScreen({ onFinish }) {
   const safeFinish = () => {
     if (finished.current) return;
     finished.current = true;
+    // Ensure overlay cannot block the site
+    if (rootRef.current) {
+      rootRef.current.style.pointerEvents = "none";
+      rootRef.current.style.opacity = "0";
+    }
     try {
       onFinish?.();
     } catch (_) {}
   };
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        onComplete: () => {
-          gsap.delayedCall(0.15, safeFinish);
-        },
-      });
+    // Hard guarantee: leave splash no matter what
+    const hardExit = setTimeout(safeFinish, 4500);
 
-      // Initial
-      gsap.set(welcomeRef.current, { opacity: 0, y: 18 });
-      gsap.set(brandRef.current, { opacity: 0 });
-      gsap.set(["#pics-letters", "#dom-d", "#dom-m", "#rae-text"], {
+    const ctx = gsap.context(() => {
+      const els = [
+        welcomeRef.current,
+        picsRef.current,
+        dRef.current,
+        mRef.current,
+        raeRef.current,
+        familyRef.current,
+        lineRef.current,
+        tagRef.current,
+        apertureRef.current,
+        ring1Ref.current,
+        ring2Ref.current,
+        ring3Ref.current,
+        ring4Ref.current,
+        flashRef.current,
+        glowRef.current,
+        rootRef.current,
+      ];
+
+      // Skip animation if refs missing
+      if (!rootRef.current || !apertureRef.current) {
+        safeFinish();
+        return;
+      }
+
+      gsap.set(welcomeRef.current, { opacity: 0, y: 16 });
+      gsap.set([picsRef.current, dRef.current, mRef.current, raeRef.current], {
         opacity: 0,
-        y: 24,
+        y: 20,
       });
-      gsap.set(familyRef.current, { opacity: 0, y: 14 });
+      gsap.set(familyRef.current, { opacity: 0, y: 12 });
       gsap.set(lineRef.current, { scaleX: 0, opacity: 0 });
       gsap.set(tagRef.current, { opacity: 0, y: 10 });
-      gsap.set(apertureRef.current, {
-        scale: 0,
-        rotation: -540,
-        opacity: 0,
-      });
+      gsap.set(apertureRef.current, { scale: 0, rotation: -400, opacity: 0 });
       gsap.set(
         [ring1Ref.current, ring2Ref.current, ring3Ref.current, ring4Ref.current],
         { scale: 0, opacity: 0 }
       );
       gsap.set(flashRef.current, { opacity: 0 });
-      gsap.set(glowRef.current, { scale: 0, opacity: 0 });
+      gsap.set(glowRef.current, { scale: 0.3, opacity: 0 });
 
-      // ===== PHASE 1: O is born — tiny point in the middle of DOM =====
-      tl.to(brandRef.current, { opacity: 1, duration: 0.01 });
-
-      tl.to(apertureRef.current, {
-        scale: 0.35,
-        opacity: 1,
-        rotation: -360,
-        duration: 0.55,
-        ease: "power3.out",
+      const tl = gsap.timeline({
+        onComplete: () => safeFinish(),
       });
 
-      // Glow from O center
-      tl.to(
-        glowRef.current,
-        {
-          scale: 1,
-          opacity: 0.7,
-          duration: 0.6,
-          ease: "power2.out",
-        },
-        "-=0.4"
-      );
-
-      // ===== PHASE 2: HEAVY — rings explode OUT from the O =====
-      // Ring 1 (innermost) — passes through O size first
-      tl.to(
-        ring1Ref.current,
-        {
-          scale: 1,
-          opacity: 0.9,
-          duration: 0.45,
-          ease: "power4.out",
-        },
-        "-=0.25"
-      );
-      // Ring 2
-      tl.to(
-        ring2Ref.current,
-        {
-          scale: 1,
-          opacity: 0.65,
-          duration: 0.55,
-          ease: "power4.out",
-        },
-        "-=0.3"
-      );
-      // Ring 3
-      tl.to(
-        ring3Ref.current,
-        {
-          scale: 1,
-          opacity: 0.4,
-          duration: 0.65,
-          ease: "power4.out",
-        },
-        "-=0.4"
-      );
-      // Ring 4 (widest)
-      tl.to(
-        ring4Ref.current,
-        {
-          scale: 1,
-          opacity: 0.22,
-          duration: 0.75,
-          ease: "power4.out",
-        },
-        "-=0.5"
-      );
-
-      // Continuous spin on rings (opposite directions)
-      gsap.to(ring1Ref.current, {
-        rotation: 360,
-        duration: 5,
-        ease: "none",
-        repeat: -1,
-      });
-      gsap.to(ring2Ref.current, {
-        rotation: -360,
-        duration: 7,
-        ease: "none",
-        repeat: -1,
-      });
-      gsap.to(ring3Ref.current, {
-        rotation: 360,
-        duration: 10,
-        ease: "none",
-        repeat: -1,
-      });
-      gsap.to(ring4Ref.current, {
-        rotation: -360,
-        duration: 14,
-        ease: "none",
-        repeat: -1,
-      });
-
-      // ===== PHASE 3: O heavy spin + scale through the rings =====
-      tl.to(
-        apertureRef.current,
-        {
-          scale: 1.5,
-          rotation: 0,
-          duration: 0.7,
-          ease: "power4.out",
-        },
-        "-=0.55"
-      );
-
-      // Shutter flash — light passes through O
-      tl.to(
-        flashRef.current,
-        {
-          opacity: 0.9,
-          duration: 0.05,
-        },
-        "-=0.1"
-      );
-      tl.to(flashRef.current, {
-        opacity: 0,
-        duration: 0.4,
+      // 1. Glow + O birth from center of DOM
+      tl.to(glowRef.current, {
+        scale: 1.2,
+        opacity: 0.65,
+        duration: 0.5,
         ease: "power2.out",
       });
 
-      // O settles to final size with bounce
-      tl.to(apertureRef.current, {
-        scale: 1,
-        duration: 0.4,
-        ease: "elastic.out(1, 0.45)",
+      tl.to(
+        apertureRef.current,
+        {
+          scale: 0.4,
+          opacity: 1,
+          rotation: -200,
+          duration: 0.45,
+          ease: "power3.out",
+        },
+        "-=0.3"
+      );
+
+      // 2. Rings explode OUT from O (pass through O)
+      tl.to(
+        ring1Ref.current,
+        { scale: 1, opacity: 0.85, duration: 0.4, ease: "power3.out" },
+        "-=0.15"
+      );
+      tl.to(
+        ring2Ref.current,
+        { scale: 1, opacity: 0.55, duration: 0.5, ease: "power3.out" },
+        "-=0.3"
+      );
+      tl.to(
+        ring3Ref.current,
+        { scale: 1, opacity: 0.35, duration: 0.55, ease: "power3.out" },
+        "-=0.35"
+      );
+      tl.to(
+        ring4Ref.current,
+        { scale: 1, opacity: 0.2, duration: 0.6, ease: "power3.out" },
+        "-=0.4"
+      );
+
+      // Spin rings (finite, not infinite — so timeline can complete)
+      tl.to(
+        ring1Ref.current,
+        { rotation: 180, duration: 2.2, ease: "none" },
+        0.4
+      );
+      tl.to(
+        ring2Ref.current,
+        { rotation: -140, duration: 2.2, ease: "none" },
+        0.4
+      );
+      tl.to(
+        ring3Ref.current,
+        { rotation: 100, duration: 2.2, ease: "none" },
+        0.4
+      );
+      tl.to(
+        ring4Ref.current,
+        { rotation: -80, duration: 2.2, ease: "none" },
+        0.4
+      );
+
+      // 3. Heavy O spin + scale through rings
+      tl.to(
+        apertureRef.current,
+        {
+          scale: 1.45,
+          rotation: 20,
+          duration: 0.55,
+          ease: "power4.out",
+        },
+        "-=1.6"
+      );
+
+      // Shutter flash through O
+      tl.to(
+        flashRef.current,
+        { opacity: 0.85, duration: 0.05 },
+        "-=0.05"
+      );
+      tl.to(flashRef.current, {
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.out",
       });
 
-      // Pulse beats through O
+      // O settle + pulse
       tl.to(apertureRef.current, {
-        scale: 1.22,
+        scale: 1,
+        rotation: 0,
+        duration: 0.35,
+        ease: "back.out(2)",
+      });
+      tl.to(apertureRef.current, {
+        scale: 1.15,
         duration: 0.1,
         yoyo: true,
-        repeat: 5,
+        repeat: 3,
         ease: "power1.inOut",
       });
 
-      // Keep O spinning forever during splash
-      gsap.to(apertureRef.current, {
-        rotation: "+=720",
-        duration: 8,
-        ease: "none",
-        repeat: -1,
-      });
-
-      // ===== PHASE 4: Letters appear around the living O =====
+      // 4. Brand letters around O
       tl.to(
-        "#pics-letters",
-        { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
-        "-=0.55"
-      );
-      tl.to(
-        "#dom-d",
+        picsRef.current,
         { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
         "-=0.35"
       );
       tl.to(
-        "#dom-m",
-        { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
-        "-=0.3"
+        dRef.current,
+        { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" },
+        "-=0.28"
       );
       tl.to(
-        "#rae-text",
-        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" },
+        mRef.current,
+        { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" },
         "-=0.25"
       );
+      tl.to(
+        raeRef.current,
+        { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" },
+        "-=0.2"
+      );
 
-      // Welcome (above)
       tl.to(
         welcomeRef.current,
-        { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
-        "-=0.5"
+        { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" },
+        "-=0.45"
       );
-
-      // Family
       tl.to(
         familyRef.current,
-        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" },
-        "-=0.25"
+        { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
+        "-=0.2"
       );
-
-      // Line + tag
       tl.to(
         lineRef.current,
-        { scaleX: 1, opacity: 1, duration: 0.45, ease: "power2.out" },
+        { scaleX: 1, opacity: 1, duration: 0.4, ease: "power2.out" },
         "-=0.15"
       );
       tl.to(
         tagRef.current,
-        { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
-        "-=0.2"
+        { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" },
+        "-=0.15"
       );
 
-      // ===== EXIT: rings keep expanding past O then fade =====
+      // 5. Exit — rings expand past O, then fade whole splash
       tl.to(
         [ring1Ref.current, ring2Ref.current, ring3Ref.current, ring4Ref.current],
         {
-          scale: 2.8,
+          scale: 2.5,
           opacity: 0,
-          duration: 0.85,
+          duration: 0.6,
           ease: "power2.in",
-          stagger: 0.06,
+          stagger: 0.04,
         },
-        "+=0.85"
+        "+=0.55"
       );
 
       tl.to(
         rootRef.current,
-        { opacity: 0, duration: 0.55, ease: "power2.inOut" },
-        "-=0.4"
+        {
+          opacity: 0,
+          duration: 0.45,
+          ease: "power2.inOut",
+          onStart: () => {
+            if (rootRef.current) rootRef.current.style.pointerEvents = "none";
+          },
+        },
+        "-=0.25"
       );
     }, rootRef);
 
-    const failSafe = setTimeout(safeFinish, 7000);
     return () => {
+      clearTimeout(hardExit);
       ctx.revert();
-      clearTimeout(failSafe);
     };
   }, []);
 
@@ -301,7 +290,6 @@ export default function SplashScreen({ onFinish }) {
       ref={rootRef}
       className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black overflow-hidden"
     >
-      {/* Full-screen shutter flash */}
       <div
         ref={flashRef}
         className="pointer-events-none absolute inset-0 z-50 bg-white"
@@ -317,32 +305,23 @@ export default function SplashScreen({ onFinish }) {
           Welcome to
         </p>
 
-        {/* ===== LOGO with O as animation origin ===== */}
-        <div
-          ref={brandRef}
-          className="relative flex flex-col items-center justify-center text-white select-none"
-        >
-          {/* Rings + glow are ANCHORED on the aperture O */}
+        <div className="relative flex flex-col items-center justify-center text-white select-none">
           <div className="flex items-center font-extrabold text-4xl sm:text-5xl md:text-7xl tracking-wider leading-none uppercase">
-            <span id="pics-letters">PICS</span>
+            <span ref={picsRef}>PICS</span>
 
             <span className="ml-2 sm:ml-3 flex items-center">
-              <span id="dom-d">D</span>
+              <span ref={dRef}>D</span>
 
-              {/* === O WRAPPER: rings expand FROM here === */}
+              {/* O = aperture — all rings expand from here */}
               <span
-                ref={apertureWrapRef}
                 className="relative inline-flex items-center justify-center mx-0.5 sm:mx-1"
                 style={{ width: "1.15em", height: "1.15em" }}
               >
-                {/* Gold glow from O */}
                 <span
                   ref={glowRef}
                   className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/40 blur-2xl"
                   style={{ width: "180%", height: "180%" }}
                 />
-
-                {/* Ring 1 – closest to O, expands through it */}
                 <span
                   ref={ring1Ref}
                   className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-gold"
@@ -352,7 +331,6 @@ export default function SplashScreen({ onFinish }) {
                     boxShadow: "0 0 24px rgba(197,168,128,0.55)",
                   }}
                 />
-                {/* Ring 2 */}
                 <span
                   ref={ring2Ref}
                   className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/70"
@@ -362,26 +340,17 @@ export default function SplashScreen({ onFinish }) {
                     boxShadow: "0 0 36px rgba(197,168,128,0.35)",
                   }}
                 />
-                {/* Ring 3 */}
                 <span
                   ref={ring3Ref}
                   className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30"
-                  style={{
-                    width: "340%",
-                    height: "340%",
-                  }}
+                  style={{ width: "340%", height: "340%" }}
                 />
-                {/* Ring 4 – widest, fills background from O */}
                 <span
                   ref={ring4Ref}
                   className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/25"
-                  style={{
-                    width: "480%",
-                    height: "480%",
-                  }}
+                  style={{ width: "480%", height: "480%" }}
                 />
 
-                {/* The actual aperture O */}
                 <span
                   ref={apertureRef}
                   className="relative z-10 inline-flex text-gold drop-shadow-[0_0_18px_rgba(197,168,128,0.8)]"
@@ -391,12 +360,12 @@ export default function SplashScreen({ onFinish }) {
                 </span>
               </span>
 
-              <span id="dom-m">M</span>
+              <span ref={mRef}>M</span>
             </span>
           </div>
 
           <span
-            id="rae-text"
+            ref={raeRef}
             className="mt-2 sm:mt-3 font-sans text-[10px] sm:text-xs md:text-sm font-bold tracking-[0.5em] uppercase opacity-90"
           >
             RAEBARELI
