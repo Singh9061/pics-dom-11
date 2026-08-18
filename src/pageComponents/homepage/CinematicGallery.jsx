@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Link } from "react-router-dom";
 import {
   c1_pic1,
@@ -13,6 +14,8 @@ import {
   c1_pic10,
 } from "../../Assets/picture/client1";
 import { c2_pic2, c2_pic11 } from "../../Assets/picture/client2";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const MUSEUM = [
   { src: c1_pic10, title: "Sacred Phere", z: 0 },
@@ -25,7 +28,6 @@ const MUSEUM = [
   { src: c1_pic3, title: "Quiet Glance", z: -98 },
 ];
 
-/* ---------- subtle web audio ---------- */
 function playTone(freq, dur, type, vol) {
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -49,11 +51,11 @@ function playShutter() {
   setTimeout(() => playTone(90, 0.12, "square", 0.03), 40);
 }
 
-/* ---------- R3F: floating photo plane with depth respond ---------- */
-function PhotoPlane({ url, position, title, index, activeIndex, mouse }) {
+function PhotoPlane({ url, position, index, activeIndex, mouse }) {
   const tex = useTexture(url);
   const mesh = useRef();
   const mat = useRef();
+  const scaleTarget = useRef(new THREE.Vector3(1, 0.66, 1));
 
   useMemo(() => {
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -62,13 +64,10 @@ function PhotoPlane({ url, position, title, index, activeIndex, mouse }) {
 
   useFrame(() => {
     if (!mesh.current) return;
-    const target = index === activeIndex ? 1 : 0.55;
-    mesh.current.scale.lerp(
-      new THREE.Vector3(target * 1.15, target * 0.75, 1),
-      0.06
-    );
-    // neural-ish depth: mouse parallax stronger on active
-    const depth = index === activeIndex ? 1.2 : 0.35;
+    const on = index === activeIndex;
+    scaleTarget.current.set(on ? 1.15 : 0.9, on ? 0.76 : 0.6, 1);
+    mesh.current.scale.lerp(scaleTarget.current, 0.06);
+    const depth = on ? 1.2 : 0.35;
     mesh.current.rotation.y = THREE.MathUtils.lerp(
       mesh.current.rotation.y,
       mouse.current.x * 0.25 * depth,
@@ -82,7 +81,7 @@ function PhotoPlane({ url, position, title, index, activeIndex, mouse }) {
     if (mat.current) {
       mat.current.opacity = THREE.MathUtils.lerp(
         mat.current.opacity,
-        index === activeIndex ? 1 : 0.35,
+        on ? 1 : 0.32,
         0.08
       );
     }
@@ -95,7 +94,7 @@ function PhotoPlane({ url, position, title, index, activeIndex, mouse }) {
         ref={mat}
         map={tex}
         transparent
-        opacity={0.35}
+        opacity={0.32}
         side={THREE.DoubleSide}
         toneMapped={false}
       />
@@ -103,22 +102,20 @@ function PhotoPlane({ url, position, title, index, activeIndex, mouse }) {
   );
 }
 
-/* dust / particle field */
-function Dust({ count = 400 }) {
+function Dust({ count = 350 }) {
   const ref = useRef();
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * 30;
-      arr[i * 3 + 1] = (Math.random() - 0.5) * 16;
+      arr[i * 3] = (Math.random() - 0.5) * 28;
+      arr[i * 3 + 1] = (Math.random() - 0.5) * 14;
       arr[i * 3 + 2] = -Math.random() * 110;
     }
     return arr;
   }, [count]);
 
   useFrame((_, dt) => {
-    if (!ref.current) return;
-    ref.current.rotation.y += dt * 0.02;
+    if (ref.current) ref.current.rotation.y += dt * 0.02;
   });
 
   return (
@@ -135,7 +132,7 @@ function Dust({ count = 400 }) {
         size={0.035}
         color="#c5a880"
         transparent
-        opacity={0.45}
+        opacity={0.4}
         depthWrite={false}
         sizeAttenuation
       />
@@ -167,14 +164,13 @@ function MuseumScene({ progress, mouse, activeIndex }) {
   return (
     <>
       <color attach="background" args={["#050308"]} />
-      <ambientLight intensity={0.9} />
+      <ambientLight intensity={0.95} />
       <Dust />
       <CameraRig progress={progress} mouse={mouse} />
       {MUSEUM.map((item, i) => (
         <PhotoPlane
           key={item.title}
           url={item.src}
-          title={item.title}
           index={i}
           activeIndex={activeIndex}
           mouse={mouse}
@@ -185,7 +181,6 @@ function MuseumScene({ progress, mouse, activeIndex }) {
   );
 }
 
-/* ---------- Full immersive overlay ---------- */
 function ImmersiveWorld({ onExit }) {
   const progress = useRef(0);
   const mouse = useRef({ x: 0, y: 0 });
@@ -193,18 +188,14 @@ function ImmersiveWorld({ onExit }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [title, setTitle] = useState(MUSEUM[0].title);
-  const webglOk = useRef(true);
 
   useEffect(() => {
-    // aperture open
-    const tl = gsap.timeline({
-      onComplete: () => setReady(true),
-    });
+    const tl = gsap.timeline({ onComplete: () => setReady(true) });
     if (apertureRef.current) {
       gsap.set(apertureRef.current, { clipPath: "circle(0% at 50% 50%)" });
       tl.to(apertureRef.current, {
         clipPath: "circle(150% at 50% 50%)",
-        duration: 1.4,
+        duration: 1.35,
         ease: "power3.inOut",
       });
     }
@@ -238,15 +229,10 @@ function ImmersiveWorld({ onExit }) {
 
   const onCreated = useCallback(({ gl }) => {
     gl.setClearColor("#050308");
-    gl.domElement.addEventListener("webglcontextlost", (e) => {
-      e.preventDefault();
-      webglOk.current = false;
-    });
   }, []);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black">
-      {/* aperture veil */}
       <div
         ref={apertureRef}
         className="absolute inset-0 z-20 bg-black"
@@ -256,7 +242,11 @@ function ImmersiveWorld({ onExit }) {
       <Canvas
         camera={{ position: [0, 0, 6], fov: 50, near: 0.1, far: 200 }}
         dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        gl={{
+          antialias: true,
+          alpha: false,
+          powerPreference: "high-performance",
+        }}
         onCreated={onCreated}
       >
         <Suspense fallback={null}>
@@ -268,19 +258,8 @@ function ImmersiveWorld({ onExit }) {
         </Suspense>
       </Canvas>
 
-      {/* lens UI overlays */}
       <div className="pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_120px_rgba(0,0,0,0.75)]" />
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.55)_100%)]" />
-
-      {/* film grain */}
-      <div
-        className="pointer-events-none absolute inset-0 z-10 opacity-[0.12] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            "url(data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E)",
-          backgroundSize: "160px",
-        }}
-      />
 
       <div className="absolute left-6 top-6 z-30 md:left-10 md:top-10">
         <p className="text-[10px] uppercase tracking-[0.4em] text-gold/70">
@@ -327,18 +306,13 @@ function ImmersiveWorld({ onExit }) {
   );
 }
 
-/* ---------- Landing preview (before enter) ---------- */
 export default function CinematicGallery() {
   const [immersive, setImmersive] = useState(false);
   const sectionRef = useRef(null);
   const cardsRef = useRef([]);
 
   useEffect(() => {
-    if (immersive) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = immersive ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
@@ -397,7 +371,6 @@ export default function CinematicGallery() {
             Enter Experience
           </button>
 
-          {/* preview strip */}
           <div className="mt-16 grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
             {MUSEUM.slice(0, 4).map((item, i) => (
               <div
