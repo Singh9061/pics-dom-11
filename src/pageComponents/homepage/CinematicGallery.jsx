@@ -4,125 +4,175 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   c1_pic1,
+  c1_pic2,
   c1_pic3,
   c1_pic5,
   c1_pic7,
   c1_pic8,
   c1_pic10,
 } from "../../Assets/picture/client1";
-import { c2_pic2, c2_pic11 } from "../../Assets/picture/client2";
+import { c2_pic2, c2_pic7, c2_pic11 } from "../../Assets/picture/client2";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const FRAMES = [
-  { src: c1_pic10, title: "Sacred Phere", line: "THROUGH THE LENS" },
-  { src: c2_pic2, title: "Royal Baraat", line: "HERITAGE IN MOTION" },
-  { src: c1_pic1, title: "Crimson Sindoor", line: "RAW EMOTION" },
-  { src: c1_pic5, title: "Palace Union", line: "TIMELESS UNIONS" },
-  { src: c1_pic7, title: "Firelight", line: "GOLDEN HOUR" },
-  { src: c1_pic8, title: "Legacy", line: "FAMILY ARCHIVES" },
-  { src: c2_pic11, title: "Intimate", line: "QUIET MOMENTS" },
-  { src: c1_pic3, title: "Quiet Glance", line: "EVERY FRAME A STORY" },
+/* Positions on an oval — left title space + floating frames */
+const CARDS = [
+  {
+    src: c1_pic10,
+    title: "Sacred Phere",
+    sub: "Heritage Wedding",
+    w: "min(42vw, 380px)",
+    x: "12%",
+    y: "18%",
+    z: 3,
+    rot: -4,
+  },
+  {
+    src: c2_pic2,
+    title: "Royal Baraat",
+    sub: "Procession",
+    w: "min(36vw, 320px)",
+    x: "52%",
+    y: "8%",
+    z: 2,
+    rot: 3,
+  },
+  {
+    src: c1_pic1,
+    title: "Crimson Sindoor",
+    sub: "Intimate Ritual",
+    w: "min(28vw, 240px)",
+    x: "68%",
+    y: "42%",
+    z: 4,
+    rot: -2,
+  },
+  {
+    src: c1_pic5,
+    title: "Palace Union",
+    sub: "Destination",
+    w: "min(34vw, 300px)",
+    x: "28%",
+    y: "48%",
+    z: 1,
+    rot: 5,
+  },
+  {
+    src: c1_pic7,
+    title: "Firelight",
+    sub: "Sangeet Night",
+    w: "min(30vw, 260px)",
+    x: "58%",
+    y: "58%",
+    z: 3,
+    rot: -6,
+  },
+  {
+    src: c2_pic11,
+    title: "Legacy",
+    sub: "Family Archive",
+    w: "min(24vw, 200px)",
+    x: "8%",
+    y: "62%",
+    z: 2,
+    rot: 2,
+  },
+  {
+    src: c1_pic8,
+    title: "Golden Hour",
+    sub: "Portrait",
+    w: "min(26vw, 220px)",
+    x: "78%",
+    y: "18%",
+    z: 1,
+    rot: -3,
+  },
+  {
+    src: c1_pic3,
+    title: "Quiet Glance",
+    sub: "Candid",
+    w: "min(22vw, 180px)",
+    x: "42%",
+    y: "72%",
+    z: 5,
+    rot: 4,
+  },
 ];
 
 export default function CinematicGallery() {
   const sectionRef = useRef(null);
-  const pinRef = useRef(null);
-  const stageRef = useRef(null);
-  const progressRef = useRef(null);
-  const labelRef = useRef(null);
-  const titleRef = useRef(null);
-  const slidesRef = useRef([]);
-  const indexRef = useRef(0);
+  const fieldRef = useRef(null);
+  const cardsRef = useRef([]);
 
   useEffect(() => {
     const section = sectionRef.current;
-    const pin = pinRef.current;
-    const stage = stageRef.current;
-    if (!section || !pin || !stage) return;
-
-    const slides = slidesRef.current.filter(Boolean);
-    if (slides.length === 0) return;
+    const field = fieldRef.current;
+    const cards = cardsRef.current.filter(Boolean);
+    if (!section || !field || cards.length === 0) return;
 
     const ctx = gsap.context(() => {
-      gsap.set(slides, { opacity: 0, scale: 1.04 });
-      gsap.set(slides[0], { opacity: 1, scale: 1 });
-
-      const total = FRAMES.length;
-
-      ScrollTrigger.create({
-        trigger: section,
-        start: "top top",
-        end: () => "+=" + window.innerHeight * (total * 0.7),
-        pin: pin,
-        scrub: 0.8,
-        anticipatePin: 1,
-        onUpdate: (self) => {
-          const raw = self.progress * total;
-          const i = Math.min(total - 1, Math.floor(raw));
-
-          if (progressRef.current) {
-            progressRef.current.style.transform =
-              "scaleX(" + self.progress + ")";
+      // Entrance from oval paths
+      cards.forEach((card, i) => {
+        const angle = (i / cards.length) * Math.PI * 2;
+        gsap.fromTo(
+          card,
+          {
+            opacity: 0,
+            scale: 0.7,
+            x: Math.cos(angle) * 120,
+            y: Math.sin(angle) * 80,
+            rotate: CARDS[i].rot * 2,
+          },
+          {
+            opacity: 1,
+            scale: 1,
+            x: 0,
+            y: 0,
+            rotate: CARDS[i].rot,
+            duration: 1.1,
+            delay: i * 0.08,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: section,
+              start: "top 75%",
+              toggleActions: "play none none none",
+            },
           }
+        );
 
-          if (i === indexRef.current) return;
-          const prev = indexRef.current;
-          indexRef.current = i;
+        // Parallax depth by z layer
+        const depth = CARDS[i].z;
+        gsap.to(card, {
+          y: depth * -28,
+          ease: "none",
+          scrollTrigger: {
+            trigger: section,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.2,
+          },
+        });
 
-          // Smooth crossfade — no hard cuts
-          if (slides[prev]) {
-            gsap.to(slides[prev], {
-              opacity: 0,
-              scale: 1.06,
-              duration: 0.55,
-              ease: "power2.inOut",
-              overwrite: true,
-            });
-          }
-          if (slides[i]) {
-            gsap.fromTo(
-              slides[i],
-              { opacity: 0, scale: 1.06 },
-              {
-                opacity: 1,
-                scale: 1,
-                duration: 0.55,
-                ease: "power2.inOut",
-                overwrite: true,
-              }
-            );
-          }
-
-          if (labelRef.current) {
-            gsap.fromTo(
-              labelRef.current,
-              { opacity: 0, y: 16 },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 0.4,
-                ease: "power2.out",
-                onStart: () => {
-                  labelRef.current.textContent = FRAMES[i].line;
-                },
-              }
-            );
-          }
-          if (titleRef.current) {
-            titleRef.current.textContent = FRAMES[i].title;
-          }
-        },
+        // Continuous slow oval drift
+        gsap.to(card, {
+          x: "+=" + (12 + depth * 4),
+          y: "+=" + (8 + depth * 3),
+          duration: 4 + depth * 0.6,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: i * 0.3,
+        });
       });
 
-      // Gentle float on the curved stage
-      gsap.to(stage, {
-        y: -12,
+      // Soft rotate of whole field on scroll
+      gsap.to(field, {
+        rotate: 1.5,
         ease: "none",
         scrollTrigger: {
           trigger: section,
-          start: "top top",
-          end: () => "+=" + window.innerHeight * (total * 0.7),
+          start: "top bottom",
+          end: "bottom top",
           scrub: true,
         },
       });
@@ -131,99 +181,104 @@ export default function CinematicGallery() {
     return () => ctx.revert();
   }, []);
 
+  const onMove = (e, el, max = 10) => {
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    el.style.transform =
+      el.style.transform.replace(/rotateX\([^)]*\)/g, "").replace(/rotateY\([^)]*\)/g, "") +
+      " rotateX(" +
+      -y * max +
+      "deg) rotateY(" +
+      x * max +
+      "deg)";
+  };
+
   return (
     <section
       ref={sectionRef}
-      className="relative bg-[#08060c]"
-      style={{ height: FRAMES.length * 70 + "vh" }}
+      className="relative overflow-hidden bg-[#0a0612] py-24 md:py-32"
     >
-      <div
-        ref={pinRef}
-        className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden"
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(70,35,80,0.22)_0%,#08060c_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_40%,rgba(90,40,100,0.35)_0%,transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_70%,rgba(40,20,60,0.4)_0%,transparent_50%)]" />
 
-        <div className="relative z-20 mb-5 text-center md:mb-8">
-          <p className="text-[10px] uppercase tracking-[0.5em] text-gold/70">
-            Immersive Archive
+      <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-8">
+        <div className="mb-10 flex flex-col gap-6 md:mb-14 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.45em] text-gold/70">
+              Immersive Archive
+            </p>
+            <h2 className="mt-3 font-serif text-3xl font-light uppercase leading-tight tracking-[0.08em] text-white md:text-5xl">
+              Through
+              <br />
+              the lens
+            </h2>
+          </div>
+          <p className="max-w-xs text-sm leading-relaxed text-white/40 md:text-right">
+            Frames in orbit — scroll and hover to feel the depth of every moment.
           </p>
-          <h2 className="mt-2 font-serif text-2xl font-light tracking-[0.2em] text-white md:text-4xl">
-            Through the lens
-          </h2>
         </div>
 
-        {/* Single smooth curved panel — no strip seams */}
+        {/* Floating oval field */}
         <div
-          ref={stageRef}
-          className="relative z-10 w-[min(92vw,1080px)]"
-          style={{ perspective: "1600px" }}
+          ref={fieldRef}
+          className="relative mx-auto w-full"
+          style={{
+            height: "min(920px, 120vw)",
+            perspective: "1200px",
+            transformStyle: "preserve-3d",
+          }}
         >
-          <div
-            className="relative aspect-video overflow-hidden bg-black"
-            style={{
-              transform: "rotateX(6deg)",
-              transformStyle: "preserve-3d",
-              borderRadius: "4px",
-              boxShadow:
-                "0 40px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06)",
-            }}
-          >
-            {FRAMES.map((frame, i) => (
-              <div
-                key={frame.title}
-                ref={(el) => {
-                  slidesRef.current[i] = el;
-                }}
-                className="absolute inset-0 will-change-transform"
-                style={{ opacity: i === 0 ? 1 : 0 }}
-              >
-                <img
-                  src={frame.src}
-                  alt={frame.title}
-                  className="h-full w-full object-cover"
-                  draggable={false}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                />
-              </div>
-            ))}
-
-            {/* Edge fade = soft curve feel without slice gaps */}
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-black/40" />
-            <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.45)]" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/50 to-transparent" />
-
-            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-between px-6 py-10 md:py-14">
-              <p
-                ref={labelRef}
-                className="text-center font-serif text-xl font-light uppercase tracking-[0.12em] text-white drop-shadow-md sm:text-3xl md:text-4xl"
-              >
-                {FRAMES[0].line}
-              </p>
-              <p
-                ref={titleRef}
-                className="text-[10px] uppercase tracking-[0.4em] text-white/65"
-              >
-                {FRAMES[0].title}
-              </p>
+          {CARDS.map((card, i) => (
+            <div
+              key={card.title}
+              ref={(el) => {
+                cardsRef.current[i] = el;
+              }}
+              className="absolute overflow-hidden bg-black shadow-[0_25px_60px_rgba(0,0,0,0.55)] will-change-transform"
+              style={{
+                width: card.w,
+                left: card.x,
+                top: card.y,
+                zIndex: card.z,
+                transform: "rotate(" + card.rot + "deg)",
+                transformStyle: "preserve-3d",
+              }}
+              onMouseMove={(e) => onMove(e, e.currentTarget, 8)}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform =
+                  "rotate(" + card.rot + "deg)";
+              }}
+            >
+              <Link to="/gallery" className="group block">
+                <div className="relative aspect-4/3 overflow-hidden">
+                  <img
+                    src={card.src}
+                    alt={card.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-80" />
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-white">
+                      {card.title}
+                    </p>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.25em] text-white/50">
+                      {card.sub}
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </div>
-          </div>
+          ))}
         </div>
 
-        <div className="relative z-20 mt-8 flex w-[min(90vw,420px)] flex-col items-center gap-3">
-          <div className="h-px w-full origin-left overflow-hidden bg-white/10">
-            <div
-              ref={progressRef}
-              className="h-full w-full origin-left bg-gold/80"
-              style={{ transform: "scaleX(0)" }}
-            />
-          </div>
-          <p className="text-[9px] uppercase tracking-[0.4em] text-white/35">
-            Scroll to explore
-          </p>
+        <div className="mt-10 flex justify-center md:mt-14">
           <Link
             to="/gallery"
-            className="mt-1 border border-white/20 px-8 py-2.5 text-[10px] uppercase tracking-[0.3em] text-white/70 transition-colors hover:border-gold hover:text-gold"
+            className="border border-white/20 px-10 py-3 text-[11px] uppercase tracking-[0.3em] text-white/70 transition-colors hover:border-gold hover:text-gold"
           >
             Full Gallery
           </Link>
