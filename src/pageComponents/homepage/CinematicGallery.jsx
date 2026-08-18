@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useTexture } from "@react-three/drei";
+import * as THREE from "three";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Link } from "react-router-dom";
 import {
   c1_pic1,
-  c1_pic2,
   c1_pic3,
   c1_pic5,
   c1_pic7,
@@ -13,240 +14,435 @@ import {
 } from "../../Assets/picture/client1";
 import { c2_pic2, c2_pic11 } from "../../Assets/picture/client2";
 
-gsap.registerPlugin(ScrollTrigger);
-
-/**
- * Scheme Engine style:
- * - Scattered overlapping cards, different sizes
- * - On scroll: lower cards move UP, upper cards move DOWN (crossing parallax)
- * - Big section title on the left
- */
-const CARDS = [
-  {
-    src: c1_pic10,
-    title: "Sacred Phere",
-    sub: "Heritage Ritual",
-    // layout % of field
-    left: "6%",
-    top: "55%",
-    w: "min(38vw, 340px)",
-    // scroll: positive = moves up when scrolling down (bottom cards)
-    speed: 1.35,
-    z: 4,
-  },
-  {
-    src: c2_pic2,
-    title: "Royal Baraat",
-    sub: "Procession",
-    left: "28%",
-    top: "28%",
-    w: "min(44vw, 400px)",
-    speed: 0.55,
-    z: 5,
-  },
-  {
-    src: c1_pic5,
-    title: "Palace Union",
-    sub: "Destination",
-    left: "48%",
-    top: "8%",
-    w: "min(40vw, 380px)",
-    // top cards: negative = move down while page scrolls down
-    speed: -0.85,
-    z: 3,
-  },
-  {
-    src: c1_pic1,
-    title: "Crimson Sindoor",
-    sub: "Intimate",
-    left: "72%",
-    top: "2%",
-    w: "min(28vw, 260px)",
-    speed: -1.2,
-    z: 2,
-  },
-  {
-    src: c1_pic7,
-    title: "Firelight",
-    sub: "Sangeet",
-    left: "58%",
-    top: "48%",
-    w: "min(32vw, 300px)",
-    speed: 0.9,
-    z: 6,
-  },
-  {
-    src: c2_pic11,
-    title: "Legacy",
-    sub: "Family Archive",
-    left: "8%",
-    top: "12%",
-    w: "min(26vw, 220px)",
-    speed: -0.5,
-    z: 1,
-  },
-  {
-    src: c1_pic8,
-    title: "Golden Hour",
-    sub: "Portrait",
-    left: "75%",
-    top: "58%",
-    w: "min(24vw, 210px)",
-    speed: 1.1,
-    z: 3,
-  },
-  {
-    src: c1_pic3,
-    title: "Quiet Glance",
-    sub: "Candid",
-    left: "40%",
-    top: "68%",
-    w: "min(30vw, 280px)",
-    speed: 1.5,
-    z: 7,
-  },
+const MUSEUM = [
+  { src: c1_pic10, title: "Sacred Phere", z: 0 },
+  { src: c2_pic2, title: "Royal Baraat", z: -14 },
+  { src: c1_pic1, title: "Crimson Sindoor", z: -28 },
+  { src: c1_pic5, title: "Palace Union", z: -42 },
+  { src: c1_pic7, title: "Firelight", z: -56 },
+  { src: c1_pic8, title: "Golden Hour", z: -70 },
+  { src: c2_pic11, title: "Legacy", z: -84 },
+  { src: c1_pic3, title: "Quiet Glance", z: -98 },
 ];
 
+/* ---------- subtle web audio ---------- */
+function playTone(freq, dur, type, vol) {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.value = vol || 0.04;
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.stop(ctx.currentTime + dur);
+  } catch (_) {}
+}
+
+function playShutter() {
+  playTone(180, 0.08, "triangle", 0.05);
+  setTimeout(() => playTone(90, 0.12, "square", 0.03), 40);
+}
+
+/* ---------- R3F: floating photo plane with depth respond ---------- */
+function PhotoPlane({ url, position, title, index, activeIndex, mouse }) {
+  const tex = useTexture(url);
+  const mesh = useRef();
+  const mat = useRef();
+
+  useMemo(() => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+  }, [tex]);
+
+  useFrame(() => {
+    if (!mesh.current) return;
+    const target = index === activeIndex ? 1 : 0.55;
+    mesh.current.scale.lerp(
+      new THREE.Vector3(target * 1.15, target * 0.75, 1),
+      0.06
+    );
+    // neural-ish depth: mouse parallax stronger on active
+    const depth = index === activeIndex ? 1.2 : 0.35;
+    mesh.current.rotation.y = THREE.MathUtils.lerp(
+      mesh.current.rotation.y,
+      mouse.current.x * 0.25 * depth,
+      0.08
+    );
+    mesh.current.rotation.x = THREE.MathUtils.lerp(
+      mesh.current.rotation.x,
+      -mouse.current.y * 0.15 * depth,
+      0.08
+    );
+    if (mat.current) {
+      mat.current.opacity = THREE.MathUtils.lerp(
+        mat.current.opacity,
+        index === activeIndex ? 1 : 0.35,
+        0.08
+      );
+    }
+  });
+
+  return (
+    <mesh ref={mesh} position={position}>
+      <planeGeometry args={[4.6, 3.05]} />
+      <meshBasicMaterial
+        ref={mat}
+        map={tex}
+        transparent
+        opacity={0.35}
+        side={THREE.DoubleSide}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
+
+/* dust / particle field */
+function Dust({ count = 400 }) {
+  const ref = useRef();
+  const positions = useMemo(() => {
+    const arr = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      arr[i * 3] = (Math.random() - 0.5) * 30;
+      arr[i * 3 + 1] = (Math.random() - 0.5) * 16;
+      arr[i * 3 + 2] = -Math.random() * 110;
+    }
+    return arr;
+  }, [count]);
+
+  useFrame((_, dt) => {
+    if (!ref.current) return;
+    ref.current.rotation.y += dt * 0.02;
+  });
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={positions.length / 3}
+          array={positions}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.035}
+        color="#c5a880"
+        transparent
+        opacity={0.45}
+        depthWrite={false}
+        sizeAttenuation
+      />
+    </points>
+  );
+}
+
+function CameraRig({ progress, mouse }) {
+  const { camera } = useThree();
+  useFrame(() => {
+    const z = -progress.current * 14;
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, z + 6, 0.08);
+    camera.position.x = THREE.MathUtils.lerp(
+      camera.position.x,
+      mouse.current.x * 0.8,
+      0.06
+    );
+    camera.position.y = THREE.MathUtils.lerp(
+      camera.position.y,
+      mouse.current.y * 0.4,
+      0.06
+    );
+    camera.lookAt(mouse.current.x * 0.3, mouse.current.y * 0.15, z - 4);
+  });
+  return null;
+}
+
+function MuseumScene({ progress, mouse, activeIndex }) {
+  return (
+    <>
+      <color attach="background" args={["#050308"]} />
+      <ambientLight intensity={0.9} />
+      <Dust />
+      <CameraRig progress={progress} mouse={mouse} />
+      {MUSEUM.map((item, i) => (
+        <PhotoPlane
+          key={item.title}
+          url={item.src}
+          title={item.title}
+          index={i}
+          activeIndex={activeIndex}
+          mouse={mouse}
+          position={[0, 0, item.z]}
+        />
+      ))}
+    </>
+  );
+}
+
+/* ---------- Full immersive overlay ---------- */
+function ImmersiveWorld({ onExit }) {
+  const progress = useRef(0);
+  const mouse = useRef({ x: 0, y: 0 });
+  const apertureRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [title, setTitle] = useState(MUSEUM[0].title);
+  const webglOk = useRef(true);
+
+  useEffect(() => {
+    // aperture open
+    const tl = gsap.timeline({
+      onComplete: () => setReady(true),
+    });
+    if (apertureRef.current) {
+      gsap.set(apertureRef.current, { clipPath: "circle(0% at 50% 50%)" });
+      tl.to(apertureRef.current, {
+        clipPath: "circle(150% at 50% 50%)",
+        duration: 1.4,
+        ease: "power3.inOut",
+      });
+    }
+    playShutter();
+    return () => tl.kill();
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      mouse.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    const onWheel = (e) => {
+      e.preventDefault();
+      progress.current = THREE.MathUtils.clamp(
+        progress.current + e.deltaY * 0.0018,
+        0,
+        MUSEUM.length - 1.01
+      );
+      const idx = Math.round(progress.current);
+      setActiveIndex(idx);
+      setTitle(MUSEUM[idx].title);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("wheel", onWheel);
+    };
+  }, []);
+
+  const onCreated = useCallback(({ gl }) => {
+    gl.setClearColor("#050308");
+    gl.domElement.addEventListener("webglcontextlost", (e) => {
+      e.preventDefault();
+      webglOk.current = false;
+    });
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black">
+      {/* aperture veil */}
+      <div
+        ref={apertureRef}
+        className="absolute inset-0 z-20 bg-black"
+        style={{ clipPath: "circle(0% at 50% 50%)" }}
+      />
+
+      <Canvas
+        camera={{ position: [0, 0, 6], fov: 50, near: 0.1, far: 200 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        onCreated={onCreated}
+      >
+        <Suspense fallback={null}>
+          <MuseumScene
+            progress={progress}
+            mouse={mouse}
+            activeIndex={activeIndex}
+          />
+        </Suspense>
+      </Canvas>
+
+      {/* lens UI overlays */}
+      <div className="pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_120px_rgba(0,0,0,0.75)]" />
+      <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.55)_100%)]" />
+
+      {/* film grain */}
+      <div
+        className="pointer-events-none absolute inset-0 z-10 opacity-[0.12] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E)",
+          backgroundSize: "160px",
+        }}
+      />
+
+      <div className="absolute left-6 top-6 z-30 md:left-10 md:top-10">
+        <p className="text-[10px] uppercase tracking-[0.4em] text-gold/70">
+          Pics Dom · Living Archive
+        </p>
+        <h3 className="mt-2 font-serif text-2xl font-light tracking-[0.12em] text-white md:text-3xl">
+          {title}
+        </h3>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-white/40">
+          {activeIndex + 1} / {MUSEUM.length}
+        </p>
+      </div>
+
+      <div className="absolute bottom-8 left-0 right-0 z-30 flex flex-col items-center gap-3">
+        <p className="text-[10px] uppercase tracking-[0.35em] text-white/40">
+          Scroll to travel · Move to look
+        </p>
+        <div className="h-px w-48 overflow-hidden bg-white/15">
+          <div
+            className="h-full bg-gold transition-all duration-300"
+            style={{
+              width: ((activeIndex + 1) / MUSEUM.length) * 100 + "%",
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            playShutter();
+            onExit();
+          }}
+          className="mt-2 border border-white/30 px-6 py-2 text-[10px] uppercase tracking-[0.3em] text-white/80 transition-colors hover:border-gold hover:text-gold"
+        >
+          Exit Experience
+        </button>
+      </div>
+
+      {!ready && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+          <div className="h-16 w-16 animate-pulse rounded-full border border-gold/40" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Landing preview (before enter) ---------- */
 export default function CinematicGallery() {
+  const [immersive, setImmersive] = useState(false);
   const sectionRef = useRef(null);
-  const pinRef = useRef(null);
   const cardsRef = useRef([]);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const pin = pinRef.current;
-    if (!section || !pin) return;
+    if (immersive) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [immersive]);
 
+  useEffect(() => {
     const cards = cardsRef.current.filter(Boolean);
-    if (cards.length === 0) return;
-
+    if (!cards.length || !sectionRef.current) return;
     const ctx = gsap.context(() => {
-      // Pin the stage while user scrolls through the motion
-      ScrollTrigger.create({
-        trigger: section,
-        start: "top top",
-        end: "+=220%",
-        pin: pin,
-        scrub: true,
-        anticipatePin: 1,
-      });
-
       cards.forEach((el, i) => {
-        const cfg = CARDS[i];
-        // travel distance based on speed sign & magnitude
-        const travel = cfg.speed * 280;
-
-        gsap.fromTo(
-          el,
-          { y: 0 },
-          {
-            y: travel,
-            ease: "none",
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              end: "+=220%",
-              scrub: true,
-            },
-          }
-        );
-
-        // Soft entrance once
         gsap.from(el, {
+          y: 60,
           opacity: 0,
-          scale: 0.92,
+          scale: 0.94,
           duration: 0.9,
-          delay: i * 0.06,
-          ease: "power2.out",
+          delay: i * 0.07,
+          ease: "power3.out",
           scrollTrigger: {
-            trigger: section,
-            start: "top 80%",
-            toggleActions: "play none none none",
+            trigger: el,
+            start: "top 90%",
           },
         });
       });
-    }, section);
-
+    }, sectionRef);
     return () => ctx.revert();
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative bg-[#0a0612]"
-      style={{ height: "320vh" }}
-    >
-      <div
-        ref={pinRef}
-        className="relative flex h-screen w-full overflow-hidden"
+    <>
+      <section
+        ref={sectionRef}
+        className="relative overflow-hidden bg-[#08060c] py-24 md:py-32"
       >
-        {/* Ambient — Scheme purple dark */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_50%,rgba(90,35,110,0.35)_0%,transparent_55%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_90%_20%,rgba(50,20,70,0.4)_0%,transparent_45%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(80,40,100,0.25)_0%,transparent_60%)]" />
 
-        {/* Left title like COMMERCIAL & BRANDED */}
-        <div className="relative z-20 flex w-[min(36%,320px)] shrink-0 flex-col justify-center px-6 md:px-12">
-          <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold/60">
-            Immersive Archive
+        <div className="relative z-10 mx-auto max-w-7xl px-4 text-center md:px-8">
+          <p className="text-[10px] uppercase tracking-[0.45em] text-gold/70">
+            4D Photography Museum
           </p>
-          <h2 className="font-serif text-3xl font-light uppercase leading-[1.15] tracking-[0.06em] text-white md:text-5xl">
-            Through
-            <br />
-            the Lens
+          <h2 className="mt-3 font-serif text-3xl font-light tracking-[0.12em] text-white md:text-5xl">
+            Through the lens
           </h2>
-          <p className="mt-5 hidden max-w-[200px] text-xs leading-relaxed text-white/40 md:block">
-            Scroll — frames cross paths in depth.
+          <p className="mx-auto mt-4 max-w-lg text-sm text-white/40">
+            Enter a volumetric archive — travel through depth, look with your
+            cursor, feel the lens.
           </p>
-          <Link
-            to="/gallery"
-            className="mt-8 inline-block w-fit border border-white/25 px-6 py-2.5 text-[10px] uppercase tracking-[0.28em] text-white/70 transition-colors hover:border-gold hover:text-gold"
-          >
-            Full Gallery
-          </Link>
-        </div>
 
-        {/* Card field */}
-        <div className="relative h-full flex-1">
-          {CARDS.map((card, i) => (
-            <div
-              key={card.title}
-              ref={(el) => {
-                cardsRef.current[i] = el;
-              }}
-              className="absolute will-change-transform"
-              style={{
-                left: card.left,
-                top: card.top,
-                width: card.w,
-                zIndex: card.z,
-              }}
+          <button
+            type="button"
+            onClick={() => {
+              playShutter();
+              setImmersive(true);
+            }}
+            className="mt-10 inline-flex items-center gap-3 border border-gold/50 bg-gold/10 px-10 py-4 text-[11px] uppercase tracking-[0.35em] text-gold transition-all hover:bg-gold hover:text-black"
+          >
+            Enter Experience
+          </button>
+
+          {/* preview strip */}
+          <div className="mt-16 grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
+            {MUSEUM.slice(0, 4).map((item, i) => (
+              <div
+                key={item.title}
+                ref={(el) => {
+                  cardsRef.current[i] = el;
+                }}
+                className="group relative aspect-4/3 overflow-hidden bg-black"
+              >
+                <img
+                  src={item.src}
+                  alt={item.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent" />
+                <span className="absolute bottom-3 left-3 text-[10px] uppercase tracking-[0.2em] text-white/80">
+                  {item.title}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10">
+            <Link
+              to="/gallery"
+              className="text-[11px] uppercase tracking-[0.3em] text-white/40 transition-colors hover:text-gold"
             >
-              <Link to="/gallery" className="group block">
-                <div className="overflow-hidden bg-black shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
-                  <div className="relative aspect-4/3 overflow-hidden">
-                    <img
-                      src={card.src}
-                      alt={card.title}
-                      loading={i < 3 ? "eager" : "lazy"}
-                      decoding="async"
-                      draggable={false}
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                    />
-                  </div>
-                </div>
-                <div className="mt-2.5 px-0.5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
-                    {card.title}
-                  </p>
-                  <p className="mt-0.5 text-[10px] uppercase tracking-[0.22em] text-white/45">
-                    {card.sub}
-                  </p>
-                </div>
-              </Link>
-            </div>
-          ))}
+              Or browse classic gallery →
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {immersive && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black text-white/50">
+              Loading museum…
+            </div>
+          }
+        >
+          <ImmersiveWorld onExit={() => setImmersive(false)} />
+        </Suspense>
+      )}
+    </>
   );
 }
