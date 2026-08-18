@@ -17,7 +17,9 @@ import { c2_pic2, c2_pic11 } from "../../Assets/picture/client2";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* Depth layers: higher speed = closer to camera (foreground) */
+const GRAIN_SVG =
+  "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E";
+
 const SHOTS = [
   { src: c1_pic10, title: "Sacred Phere", depth: 1.35, accent: "#8b3a3a", w: "38%", x: "8%", y: 12 },
   { src: c1_pic1, title: "Crimson Sindoor", depth: 0.55, accent: "#c45c26", w: "28%", x: "62%", y: 8 },
@@ -38,8 +40,7 @@ function FilmGrain({ active }) {
       className="pointer-events-none absolute inset-0 z-50 mix-blend-overlay transition-opacity duration-500"
       style={{
         opacity: active ? 0.35 : 0,
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")",
+        backgroundImage: "url(" + GRAIN_SVG + ")",
         backgroundSize: "180px 180px",
       }}
     />
@@ -61,7 +62,6 @@ export default function CinematicGallery() {
 
     const isMobile = window.innerWidth < 768;
 
-    // Parallax per depth layer
     const triggers = items.map((el, i) => {
       const depth = SHOTS[i].depth;
       const speed = isMobile ? depth * 40 : depth * 120;
@@ -77,7 +77,6 @@ export default function CinematicGallery() {
       });
     });
 
-    // Soft fade-in as cards enter
     const batch = ScrollTrigger.batch(items, {
       start: "top 90%",
       onEnter: (batchEls) =>
@@ -95,7 +94,7 @@ export default function CinematicGallery() {
     gsap.set(items, { opacity: 0, scale: 0.92 });
 
     return () => {
-      triggers.forEach((t) => t.scrollTrigger?.kill());
+      triggers.forEach((t) => t.scrollTrigger && t.scrollTrigger.kill());
       batch.forEach((t) => t.kill());
     };
   }, []);
@@ -114,12 +113,11 @@ export default function CinematicGallery() {
       ref={sectionRef}
       className="relative overflow-hidden bg-[#050505] py-24 md:py-32"
     >
-      {/* Dynamic ambient color from hovered photo */}
       <div
         className="pointer-events-none absolute inset-0 z-0 transition-colors duration-700"
         style={{
           background: hoverAccent
-            ? `radial-gradient(ellipse at 50% 40%, ${hoverAccent}55 0%, #050505 55%)`
+            ? "radial-gradient(ellipse at 50% 40%, " + hoverAccent + "55 0%, #050505 55%)"
             : "#050505",
         }}
       />
@@ -139,7 +137,6 @@ export default function CinematicGallery() {
           </p>
         </div>
 
-        {/* Floating depth field */}
         <div
           ref={trackRef}
           className="relative mx-auto"
@@ -148,14 +145,16 @@ export default function CinematicGallery() {
           {SHOTS.map((shot, i) => (
             <div
               key={shot.title + i}
-              ref={(el) => (itemsRef.current[i] = el)}
+              ref={(el) => {
+                itemsRef.current[i] = el;
+              }}
               className="absolute overflow-hidden rounded-sm will-change-transform"
               style={{
                 width: shot.w,
                 left: shot.x,
-                top: `${shot.y * 3.2}px`,
+                top: shot.y * 3.2 + "px",
                 zIndex: Math.round(shot.depth * 10),
-                filter: `blur(${Math.max(0, (1.4 - shot.depth) * 1.8)}px)`,
+                filter: "blur(" + Math.max(0, (1.4 - shot.depth) * 1.8) + "px)",
                 boxShadow:
                   shot.depth > 1
                     ? "0 25px 60px rgba(0,0,0,0.55)"
