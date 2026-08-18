@@ -14,11 +14,6 @@ import { c2_pic2, c2_pic11 } from "../../Assets/picture/client2";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const SLICES = 18;
-
-const GRAIN =
-  "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E";
-
 const FRAMES = [
   { src: c1_pic10, title: "Sacred Phere", line: "THROUGH THE LENS" },
   { src: c2_pic2, title: "Royal Baraat", line: "HERITAGE IN MOTION" },
@@ -30,96 +25,105 @@ const FRAMES = [
   { src: c1_pic3, title: "Quiet Glance", line: "EVERY FRAME A STORY" },
 ];
 
-function CurvedScreen({ src }) {
-  return (
-    <div
-      className="absolute inset-0 flex items-center justify-center"
-      style={{ perspective: "1400px" }}
-    >
-      <div
-        className="relative h-[58vh] w-[min(92vw,1100px)] md:h-[68vh]"
-        style={{ transformStyle: "preserve-3d", transform: "rotateX(4deg)" }}
-      >
-        {Array.from({ length: SLICES }).map((_, i) => {
-          const pct = 100 / SLICES;
-          const center = SLICES / 2 - 0.5;
-          const dist = (i - center) / center;
-          const rotY = dist * -28;
-          const z = Math.cos((dist * Math.PI) / 2) * 40 - 40;
-          return (
-            <div
-              key={i}
-              className="absolute top-0 h-full overflow-hidden"
-              style={{
-                width: pct + 0.2 + "%",
-                left: i * pct + "%",
-                transform: "rotateY(" + rotY + "deg) translateZ(" + z + "px)",
-                transformOrigin: dist < 0 ? "right center" : "left center",
-                transformStyle: "preserve-3d",
-              }}
-            >
-              <div
-                className="h-full w-full"
-                style={{
-                  backgroundImage: "url(" + src + ")",
-                  backgroundSize: SLICES * 100 + "% 100%",
-                  backgroundPosition: i * pct * -1 + "% center",
-                  backgroundRepeat: "no-repeat",
-                }}
-              />
-            </div>
-          );
-        })}
-        <div className="pointer-events-none absolute inset-0 z-10 bg-linear-to-r from-black/55 via-transparent to-black/55" />
-        <div className="pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_90px_rgba(0,0,0,0.6)]" />
-      </div>
-    </div>
-  );
-}
-
 export default function CinematicGallery() {
   const sectionRef = useRef(null);
   const pinRef = useRef(null);
+  const stageRef = useRef(null);
   const progressRef = useRef(null);
   const labelRef = useRef(null);
   const titleRef = useRef(null);
+  const slidesRef = useRef([]);
   const indexRef = useRef(0);
-  const framesRef = useRef([]);
 
   useEffect(() => {
     const section = sectionRef.current;
     const pin = pinRef.current;
-    if (!section || !pin) return;
+    const stage = stageRef.current;
+    if (!section || !pin || !stage) return;
+
+    const slides = slidesRef.current.filter(Boolean);
+    if (slides.length === 0) return;
 
     const ctx = gsap.context(() => {
-      const total = FRAMES.length;
+      gsap.set(slides, { opacity: 0, scale: 1.04 });
+      gsap.set(slides[0], { opacity: 1, scale: 1 });
 
-      framesRef.current.forEach((el, idx) => {
-        if (!el) return;
-        el.style.opacity = idx === 0 ? "1" : "0";
-      });
+      const total = FRAMES.length;
 
       ScrollTrigger.create({
         trigger: section,
         start: "top top",
-        end: () => "+=" + window.innerHeight * total * 0.85,
+        end: () => "+=" + window.innerHeight * (total * 0.7),
         pin: pin,
-        scrub: 0.65,
+        scrub: 0.8,
         anticipatePin: 1,
         onUpdate: (self) => {
-          const i = Math.min(total - 1, Math.floor(self.progress * total));
-          if (i !== indexRef.current) {
-            indexRef.current = i;
-            framesRef.current.forEach((el, idx) => {
-              if (!el) return;
-              el.style.opacity = idx === i ? "1" : "0";
-            });
-            if (labelRef.current) labelRef.current.textContent = FRAMES[i].line;
-            if (titleRef.current) titleRef.current.textContent = FRAMES[i].title;
-          }
+          const raw = self.progress * total;
+          const i = Math.min(total - 1, Math.floor(raw));
+
           if (progressRef.current) {
-            progressRef.current.style.width = self.progress * 100 + "%";
+            progressRef.current.style.transform =
+              "scaleX(" + self.progress + ")";
           }
+
+          if (i === indexRef.current) return;
+          const prev = indexRef.current;
+          indexRef.current = i;
+
+          // Smooth crossfade — no hard cuts
+          if (slides[prev]) {
+            gsap.to(slides[prev], {
+              opacity: 0,
+              scale: 1.06,
+              duration: 0.55,
+              ease: "power2.inOut",
+              overwrite: true,
+            });
+          }
+          if (slides[i]) {
+            gsap.fromTo(
+              slides[i],
+              { opacity: 0, scale: 1.06 },
+              {
+                opacity: 1,
+                scale: 1,
+                duration: 0.55,
+                ease: "power2.inOut",
+                overwrite: true,
+              }
+            );
+          }
+
+          if (labelRef.current) {
+            gsap.fromTo(
+              labelRef.current,
+              { opacity: 0, y: 16 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.4,
+                ease: "power2.out",
+                onStart: () => {
+                  labelRef.current.textContent = FRAMES[i].line;
+                },
+              }
+            );
+          }
+          if (titleRef.current) {
+            titleRef.current.textContent = FRAMES[i].title;
+          }
+        },
+      });
+
+      // Gentle float on the curved stage
+      gsap.to(stage, {
+        y: -12,
+        ease: "none",
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: () => "+=" + window.innerHeight * (total * 0.7),
+          scrub: true,
         },
       });
     }, section);
@@ -131,22 +135,15 @@ export default function CinematicGallery() {
     <section
       ref={sectionRef}
       className="relative bg-[#08060c]"
-      style={{ height: FRAMES.length * 85 + "vh" }}
+      style={{ height: FRAMES.length * 70 + "vh" }}
     >
       <div
         ref={pinRef}
         className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(80,40,90,0.28)_0%,#08060c_65%)]" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage: "url(" + GRAIN + ")",
-            backgroundSize: "180px",
-          }}
-        />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(70,35,80,0.22)_0%,#08060c_60%)]" />
 
-        <div className="relative z-20 mb-4 text-center md:mb-6">
+        <div className="relative z-20 mb-5 text-center md:mb-8">
           <p className="text-[10px] uppercase tracking-[0.5em] text-gold/70">
             Immersive Archive
           </p>
@@ -155,41 +152,70 @@ export default function CinematicGallery() {
           </h2>
         </div>
 
-        <div className="relative z-10 h-[58vh] w-full md:h-[68vh]">
-          {FRAMES.map((frame, i) => (
-            <div
-              key={frame.title}
-              ref={(el) => {
-                framesRef.current[i] = el;
-              }}
-              className="absolute inset-0 transition-opacity duration-500 ease-out"
-            >
-              <CurvedScreen src={frame.src} />
-            </div>
-          ))}
+        {/* Single smooth curved panel — no strip seams */}
+        <div
+          ref={stageRef}
+          className="relative z-10 w-[min(92vw,1080px)]"
+          style={{ perspective: "1600px" }}
+        >
+          <div
+            className="relative aspect-video overflow-hidden bg-black"
+            style={{
+              transform: "rotateX(6deg)",
+              transformStyle: "preserve-3d",
+              borderRadius: "4px",
+              boxShadow:
+                "0 40px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06)",
+            }}
+          >
+            {FRAMES.map((frame, i) => (
+              <div
+                key={frame.title}
+                ref={(el) => {
+                  slidesRef.current[i] = el;
+                }}
+                className="absolute inset-0 will-change-transform"
+                style={{ opacity: i === 0 ? 1 : 0 }}
+              >
+                <img
+                  src={frame.src}
+                  alt={frame.title}
+                  className="h-full w-full object-cover"
+                  draggable={false}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                />
+              </div>
+            ))}
 
-          <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-between py-[12vh] md:py-[14vh]">
-            <p
-              ref={labelRef}
-              className="px-4 text-center font-serif text-2xl font-light uppercase tracking-[0.15em] text-white drop-shadow-lg sm:text-3xl md:text-5xl"
-            >
-              {FRAMES[0].line}
-            </p>
-            <p
-              ref={titleRef}
-              className="text-[11px] uppercase tracking-[0.4em] text-white/70"
-            >
-              {FRAMES[0].title}
-            </p>
+            {/* Edge fade = soft curve feel without slice gaps */}
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-black/40" />
+            <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.45)]" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/50 to-transparent" />
+
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-between px-6 py-10 md:py-14">
+              <p
+                ref={labelRef}
+                className="text-center font-serif text-xl font-light uppercase tracking-[0.12em] text-white drop-shadow-md sm:text-3xl md:text-4xl"
+              >
+                {FRAMES[0].line}
+              </p>
+              <p
+                ref={titleRef}
+                className="text-[10px] uppercase tracking-[0.4em] text-white/65"
+              >
+                {FRAMES[0].title}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="relative z-20 mt-6 flex w-[min(92vw,480px)] flex-col items-center gap-4">
-          <div className="h-px w-full bg-white/10">
+        <div className="relative z-20 mt-8 flex w-[min(90vw,420px)] flex-col items-center gap-3">
+          <div className="h-px w-full origin-left overflow-hidden bg-white/10">
             <div
               ref={progressRef}
-              className="h-full bg-gold/80"
-              style={{ width: "0%" }}
+              className="h-full w-full origin-left bg-gold/80"
+              style={{ transform: "scaleX(0)" }}
             />
           </div>
           <p className="text-[9px] uppercase tracking-[0.4em] text-white/35">
