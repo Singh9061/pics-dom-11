@@ -1,77 +1,52 @@
 import { lazy, Suspense, useEffect } from "react";
-import HeroSection from "../pageComponents/homepage/Herosection"; 
-const PhotographyShowcase = lazy(() => import("../pageComponents/homepage/PhotographyShowcase"));
-const AlbumCollection = lazy(() => import("../pageComponents/homepage/AlbumCollection"));
-const MoreAboutSection = lazy(() => import("../pageComponents/homepage/MoreAboutSection"));
+import LensHero from "../pageComponents/homepage/LensHero";
+
+const CinematicGallery = lazy(() =>
+  import("../pageComponents/homepage/CinematicGallery")
+);
+const AlbumCollection = lazy(() =>
+  import("../pageComponents/homepage/AlbumCollection")
+);
+const MoreAboutSection = lazy(() =>
+  import("../pageComponents/homepage/MoreAboutSection")
+);
 
 const SectionSkeleton = () => (
-  <div className="w-full py-20 animate-pulse bg-surface/20 px-6">
-    <div className="max-w-6xl mx-auto space-y-4">
-      <div className="h-6 w-1/4 bg-border rounded" />
-      <div className="h-4 w-3/4 bg-border rounded opacity-60" />
-      <div className="h-64 w-full bg-border/40 rounded-xl mt-8" />
+  <div className="w-full bg-[#050505] px-6 py-24 animate-pulse">
+    <div className="mx-auto max-w-6xl space-y-4">
+      <div className="h-4 w-1/5 rounded bg-white/10" />
+      <div className="h-8 w-1/3 rounded bg-white/10" />
+      <div className="mt-10 h-72 w-full rounded bg-white/5" />
     </div>
   </div>
 );
 
 export default function Homepage() {
-  
   useEffect(() => {
-    /* ---------------- Mobile Performance Optimization ---------------- */
-    const styleTag = document.createElement("style");
-    styleTag.innerHTML = `
-      html {
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
-      }
-      .will-change-transform {
-        will-change: transform, opacity;
-        transform: translate3d(0,0,0);
-      }
-    `;
-    document.head.appendChild(styleTag);
-
-    /* ---------------- Resource Preloading Hint ---------------- */
-    const preloadTimeout = setTimeout(() => {
-      const links = [
-        "/src/pageComponents/homepage/PhotographyShowcase.jsx",
-        "/src/pageComponents/homepage/AlbumCollection.jsx"
-      ];
-      links.forEach((url) => {
-        const link = document.createElement("link");
-        link.rel = "prefetch";
-        link.href = url;
-        document.head.appendChild(link);
-      });
-    }, 1500);
-
+    // Cinematic sections are dark — keep page root coherent while on home
+    document.documentElement.style.background = "#050505";
     return () => {
-      document.head.removeChild(styleTag);
-      clearTimeout(preloadTimeout);
+      document.documentElement.style.background = "";
     };
   }, []);
 
   return (
-    <>
-      <HeroSection />
+    <div className="bg-[#050505]">
+      <LensHero />
 
       <Suspense fallback={<SectionSkeleton />}>
-        <div className="will-change-transform">
-          <PhotographyShowcase />
-        </div>
+        <CinematicGallery />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
-        <div className="will-change-transform">
+        <div className="border-t border-white/5 bg-[#0a0a0a]">
           <AlbumCollection />
         </div>
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
-        <div className="will-change-transform">
-          <MoreAboutSection />
-        </div>
+        <MoreAboutSection />
       </Suspense>
-    </>
+    </div>
   );
 }
