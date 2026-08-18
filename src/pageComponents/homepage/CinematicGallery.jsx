@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -6,9 +6,7 @@ import {
   c1_pic1,
   c1_pic2,
   c1_pic3,
-  c1_pic4,
   c1_pic5,
-  c1_pic6,
   c1_pic7,
   c1_pic8,
   c1_pic10,
@@ -17,111 +15,126 @@ import { c2_pic2, c2_pic11 } from "../../Assets/picture/client2";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const GRAIN_SVG =
-  "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E";
+const SLICES = 18;
 
-const SHOTS = [
-  { src: c1_pic10, title: "Sacred Phere", accent: "#8b3a3a", span: "md:col-span-2 md:row-span-2" },
-  { src: c1_pic1, title: "Crimson Sindoor", accent: "#c45c26", span: "" },
-  { src: c2_pic2, title: "Royal Baraat", accent: "#d4a574", span: "" },
-  { src: c1_pic3, title: "Quiet Glance", accent: "#4a5568", span: "md:col-span-2" },
-  { src: c1_pic5, title: "Palace Union", accent: "#b8860b", span: "" },
-  { src: c1_pic2, title: "Heritage Veil", accent: "#6b4c3b", span: "" },
-  { src: c1_pic7, title: "Firelight", accent: "#c05621", span: "md:row-span-2" },
-  { src: c1_pic4, title: "Elopement", accent: "#2d4a3e", span: "" },
-  { src: c1_pic8, title: "Golden Hour", accent: "#c5a880", span: "md:col-span-2" },
-  { src: c2_pic11, title: "Legacy", accent: "#5c4033", span: "" },
-  { src: c1_pic6, title: "Intimate", accent: "#7a3b2e", span: "" },
+const FRAMES = [
+  { src: c1_pic10, title: "Sacred Phere", line: "THROUGH THE LENS" },
+  { src: c2_pic2, title: "Royal Baraat", line: "HERITAGE IN MOTION" },
+  { src: c1_pic1, title: "Crimson Sindoor", line: "RAW EMOTION" },
+  { src: c1_pic5, title: "Palace Union", line: "TIMELESS UNIONS" },
+  { src: c1_pic7, title: "Firelight", line: "GOLDEN HOUR" },
+  { src: c1_pic8, title: "Legacy", line: "FAMILY ARCHIVES" },
+  { src: c2_pic11, title: "Intimate", line: "QUIET MOMENTS" },
+  { src: c1_pic3, title: "Quiet Glance", line: "EVERY FRAME A STORY" },
 ];
 
-function applyTilt(el, e, max) {
-  const r = el.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width;
-  const y = (e.clientY - r.top) / r.height;
-  const rotY = (x - 0.5) * max * 2;
-  const rotX = (0.5 - y) * max * 2;
-  el.style.transform =
-    "perspective(1000px) rotateX(" +
-    rotX +
-    "deg) rotateY(" +
-    rotY +
-    "deg) translateZ(16px) scale3d(1.03,1.03,1.03)";
-}
-
-function resetTilt(el) {
-  el.style.transform =
-    "perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0) scale3d(1,1,1)";
+/** Scheme Engine–style curved panel: vertical image strips with rotateY */
+function CurvedScreen({ src, active }) {
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center transition-opacity duration-700"
+      style={{
+        opacity: active ? 1 : 0,
+        pointerEvents: active ? "auto" : "none",
+        perspective: "1400px",
+      }}
+    >
+      <div
+        className="relative h-[58vh] w-[min(92vw,1100px)] md:h-[68vh]"
+        style={{ transformStyle: "preserve-3d", transform: "rotateX(4deg)" }}
+      >
+        {Array.from({ length: SLICES }).map((_, i) => {
+          const pct = 100 / SLICES;
+          const center = SLICES / 2 - 0.5;
+          const dist = (i - center) / center;
+          const rotY = dist * -28;
+          const z = Math.cos((dist * Math.PI) / 2) * 40 - 40;
+          return (
+            <div
+              key={i}
+              className="absolute top-0 h-full overflow-hidden"
+              style={{
+                width: pct + 0.15 + "%",
+                left: i * pct + "%",
+                transform:
+                  "rotateY(" + rotY + "deg) translateZ(" + z + "px)",
+                transformOrigin: dist < 0 ? "right center" : "left center",
+                transformStyle: "preserve-3d",
+              }}
+            >
+              <div
+                className="h-full w-full"
+                style={{
+                  backgroundImage: "url(" + src + ")",
+                  backgroundSize: SLICES * 100 + "% 100%",
+                  backgroundPosition: i * pct * -1 + "% center",
+                  backgroundRepeat: "no-repeat",
+                }}
+              />
+            </div>
+          );
+        })}
+        {/* Soft edge vignette on curve */}
+        <div className="pointer-events-none absolute inset-0 z-10 bg-linear-to-r from-black/50 via-transparent to-black/50" />
+        <div className="pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_80px_rgba(0,0,0,0.55)]" />
+      </div>
+    </div>
+  );
 }
 
 export default function CinematicGallery() {
   const sectionRef = useRef(null);
-  const cardsRef = useRef([]);
+  const pinRef = useRef(null);
+  const progressRef = useRef(null);
+  const labelRef = useRef(null);
   const titleRef = useRef(null);
-  const [hoverAccent, setHoverAccent] = useState(null);
-  const [grain, setGrain] = useState(false);
+  const indexRef = useRef(0);
+  const framesRef = useRef([]);
 
   useEffect(() => {
     const section = sectionRef.current;
-    const cards = cardsRef.current.filter(Boolean);
-    if (!section || cards.length === 0) return;
+    const pin = pinRef.current;
+    if (!section || !pin) return;
 
     const ctx = gsap.context(() => {
-      if (titleRef.current) {
-        gsap.from(titleRef.current.children, {
-          y: 60,
-          opacity: 0,
-          rotateX: 30,
-          duration: 1,
-          stagger: 0.12,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: titleRef.current,
-            start: "top 85%",
-          },
-        });
-      }
+      const total = FRAMES.length;
 
-      cards.forEach((card, i) => {
-        const direction = i % 3 === 0 ? -50 : i % 3 === 1 ? 50 : 0;
-        gsap.fromTo(
-          card,
-          {
-            opacity: 0,
-            y: 110,
-            x: direction,
-            scale: 0.85,
-            rotateY: direction ? direction * 0.25 : -8,
-            rotateX: 12,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            x: 0,
-            scale: 1,
-            rotateY: 0,
-            rotateX: 0,
-            duration: 1.15,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: card,
-              start: "top 92%",
-            },
+      ScrollTrigger.create({
+        trigger: section,
+        start: "top top",
+        end: () => "+=" + window.innerHeight * total * 0.85,
+        pin: pin,
+        scrub: 0.65,
+        anticipatePin: 1,
+        onUpdate: (self) => {
+          const i = Math.min(
+            total - 1,
+            Math.floor(self.progress * total)
+          );
+          if (i !== indexRef.current) {
+            indexRef.current = i;
+            framesRef.current.forEach((el, idx) => {
+              if (!el) return;
+              el.style.opacity = idx === i ? "1" : "0";
+              el.style.pointerEvents = idx === i ? "auto" : "none";
+            });
+            if (labelRef.current) {
+              labelRef.current.textContent = FRAMES[i].line;
+            }
+            if (titleRef.current) {
+              titleRef.current.textContent = FRAMES[i].title;
+            }
           }
-        );
+          if (progressRef.current) {
+            progressRef.current.style.width = self.progress * 100 + "%";
+          }
+        },
+      });
 
-        const img = card.querySelector("img");
-        if (img) {
-          gsap.to(img, {
-            yPercent: -12,
-            ease: "none",
-            scrollTrigger: {
-              trigger: card,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 1.2,
-            },
-          });
-        }
+      // Initial state
+      framesRef.current.forEach((el, idx) => {
+        if (!el) return;
+        el.style.opacity = idx === 0 ? "1" : "0";
       });
     }, section);
 
@@ -131,91 +144,77 @@ export default function CinematicGallery() {
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden bg-[#050505] py-24 md:py-32"
+      className="relative bg-[#08060c]"
+      style={{ height: FRAMES.length * 85 + "vh" }}
     >
       <div
-        className="pointer-events-none absolute inset-0 z-0 transition-colors duration-700"
-        style={{
-          background: hoverAccent
-            ? "radial-gradient(ellipse at 50% 30%, " + hoverAccent + "40 0%, #050505 50%)"
-            : "#050505",
-        }}
-      />
+        ref={pinRef}
+        className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden"
+      >
+        {/* Ambient gradient like Scheme Engine */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(80,40,90,0.25)_0%,#08060c_65%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.12]" style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E\")",
+          backgroundSize: "180px",
+        }} />
 
-      <div
-        className="pointer-events-none absolute inset-0 z-50 mix-blend-overlay transition-opacity duration-500"
-        style={{
-          opacity: grain ? 0.28 : 0,
-          backgroundImage: "url(" + GRAIN_SVG + ")",
-          backgroundSize: "160px 160px",
-        }}
-      />
-
-      <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-8">
-        <div ref={titleRef} className="mb-16 text-center md:mb-20" style={{ perspective: "800px" }}>
-          <p className="text-[10px] uppercase tracking-[0.45em] text-gold/80">
+        {/* Header */}
+        <div className="relative z-20 mb-4 text-center md:mb-6">
+          <p className="text-[10px] uppercase tracking-[0.5em] text-gold/70">
             Immersive Archive
           </p>
-          <h2 className="mt-3 font-serif text-3xl font-light tracking-[0.12em] text-white md:text-5xl">
+          <h2 className="mt-2 font-serif text-2xl font-light tracking-[0.2em] text-white md:text-4xl">
             Through the lens
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-sm text-white/40">
-            3D depth on every frame. Hover and tilt — feel the space.
-          </p>
         </div>
 
-        <div
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5"
-          style={{ perspective: "1400px", transformStyle: "preserve-3d" }}
-        >
-          {SHOTS.map((shot, i) => (
+        {/* Curved screens stack */}
+        <div className="relative z-10 h-[58vh] w-full md:h-[68vh]">
+          {FRAMES.map((frame, i) => (
             <div
-              key={shot.title + i}
+              key={frame.title}
               ref={(el) => {
-                cardsRef.current[i] = el;
+                framesRef.current[i] = el;
               }}
-              className={
-                "group relative overflow-hidden bg-black shadow-[0_25px_60px_rgba(0,0,0,0.5)] will-change-transform transition-transform duration-200 ease-out " +
-                (shot.span || "") +
-                (shot.span && shot.span.includes("row-span-2")
-                  ? " min-h-[420px] md:min-h-[560px]"
-                  : " aspect-3/4")
-              }
-              style={{ transformStyle: "preserve-3d" }}
-              onMouseMove={(e) => applyTilt(e.currentTarget, e, 14)}
-              onMouseEnter={() => {
-                setHoverAccent(shot.accent);
-                setGrain(true);
-              }}
-              onMouseLeave={(e) => {
-                resetTilt(e.currentTarget);
-                setHoverAccent(null);
-                setGrain(false);
-              }}
+              className="absolute inset-0 transition-opacity duration-500"
             >
-              <Link to="/gallery" className="absolute inset-0 block overflow-hidden">
-                <img
-                  src={shot.src}
-                  alt={shot.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-[115%] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-90" />
-                <div className="absolute inset-x-0 bottom-0 translate-y-2 p-5 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-gold">
-                    {shot.title}
-                  </span>
-                </div>
-              </Link>
+              <CurvedScreen src={frame.src} active={i === 0} />
             </div>
           ))}
+
+          {/* Overlay copy on curve — Scheme style */}
+          <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-between py-[12vh] md:py-[14vh]">
+            <p
+              ref={labelRef}
+              className="px-4 text-center font-serif text-2xl font-light uppercase tracking-[0.15em] text-white drop-shadow-lg sm:text-3xl md:text-5xl"
+            >
+              {FRAMES[0].line}
+            </p>
+            <p
+              ref={titleRef}
+              className="text-[11px] uppercase tracking-[0.4em] text-white/70"
+            >
+              {FRAMES[0].title}
+            </p>
+          </div>
         </div>
 
-        <div className="mt-14 flex justify-center">
+        {/* Scroll progress + CTA */}
+        <div className="relative z-20 mt-6 flex w-[min(92vw,480px)] flex-col items-center gap-4">
+          <div className="h-px w-full bg-white/10">
+            <div
+              ref={progressRef}
+              className="h-full bg-gold/80 transition-[width] duration-100"
+              style={{ width: "0%" }}
+            />
+          </div>
+          <p className="text-[9px] uppercase tracking-[0.4em] text-white/35">
+            Scroll to explore
+          </p>
           <Link
             to="/gallery"
-            className="border border-white/25 px-10 py-3.5 text-[11px] uppercase tracking-[0.3em] text-white/80 transition-all duration-300 hover:border-gold hover:bg-gold/10 hover:text-gold"
+            className="mt-1 border border-white/20 px-8 py-2.5 text-[10px] uppercase tracking-[0.3em] text-white/70 transition-colors hover:border-gold hover:text-gold"
           >
             Full Gallery
           </Link>
