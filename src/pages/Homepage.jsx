@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect } from "react";
-import LensHero from "../pageComponents/homepage/LensHero";
+import { lazy, Suspense } from "react";
+import HeroSection from "../pageComponents/homepage/Herosection";
 
 const CinematicGallery = lazy(() =>
   import("../pageComponents/homepage/CinematicGallery")
@@ -22,31 +22,22 @@ const SectionSkeleton = () => (
 );
 
 export default function Homepage() {
-  useEffect(() => {
-    // Cinematic sections are dark — keep page root coherent while on home
-    document.documentElement.style.background = "#050505";
-    return () => {
-      document.documentElement.style.background = "";
-    };
-  }, []);
-
   return (
-    <div className="bg-[#050505]">
-      <LensHero />
+    <>
+      {/* Hero: video only — no 3D lens glitch */}
+      <HeroSection />
 
       <Suspense fallback={<SectionSkeleton />}>
         <CinematicGallery />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
-        <div className="border-t border-white/5 bg-[#0a0a0a]">
-          <AlbumCollection />
-        </div>
+        <AlbumCollection />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
         <MoreAboutSection />
       </Suspense>
-    </div>
+    </>
   );
 }
