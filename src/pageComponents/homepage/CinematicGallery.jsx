@@ -34,6 +34,25 @@ const SHOTS = [
   { src: c1_pic6, title: "Intimate", accent: "#7a3b2e", span: "" },
 ];
 
+function applyTilt(el, e, max) {
+  const r = el.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width;
+  const y = (e.clientY - r.top) / r.height;
+  const rotY = (x - 0.5) * max * 2;
+  const rotX = (0.5 - y) * max * 2;
+  el.style.transform =
+    "perspective(1000px) rotateX(" +
+    rotX +
+    "deg) rotateY(" +
+    rotY +
+    "deg) translateZ(16px) scale3d(1.03,1.03,1.03)";
+}
+
+function resetTilt(el) {
+  el.style.transform =
+    "perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0) scale3d(1,1,1)";
+}
+
 export default function CinematicGallery() {
   const sectionRef = useRef(null);
   const cardsRef = useRef([]);
@@ -51,27 +70,28 @@ export default function CinematicGallery() {
         gsap.from(titleRef.current.children, {
           y: 60,
           opacity: 0,
+          rotateX: 30,
           duration: 1,
           stagger: 0.12,
           ease: "power3.out",
           scrollTrigger: {
             trigger: titleRef.current,
             start: "top 85%",
-            toggleActions: "play none none none",
           },
         });
       }
 
       cards.forEach((card, i) => {
-        const direction = i % 3 === 0 ? -40 : i % 3 === 1 ? 40 : 0;
+        const direction = i % 3 === 0 ? -50 : i % 3 === 1 ? 50 : 0;
         gsap.fromTo(
           card,
           {
             opacity: 0,
-            y: 100,
+            y: 110,
             x: direction,
-            scale: 0.88,
-            rotateY: direction ? direction * 0.15 : 0,
+            scale: 0.85,
+            rotateY: direction ? direction * 0.25 : -8,
+            rotateX: 12,
           },
           {
             opacity: 1,
@@ -79,17 +99,16 @@ export default function CinematicGallery() {
             x: 0,
             scale: 1,
             rotateY: 0,
-            duration: 1.1,
+            rotateX: 0,
+            duration: 1.15,
             ease: "power3.out",
             scrollTrigger: {
               trigger: card,
               start: "top 92%",
-              toggleActions: "play none none none",
             },
           }
         );
 
-        // Mild continuous parallax on image inside
         const img = card.querySelector("img");
         if (img) {
           gsap.to(img, {
@@ -133,7 +152,7 @@ export default function CinematicGallery() {
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-8">
-        <div ref={titleRef} className="mb-16 text-center md:mb-20">
+        <div ref={titleRef} className="mb-16 text-center md:mb-20" style={{ perspective: "800px" }}>
           <p className="text-[10px] uppercase tracking-[0.45em] text-gold/80">
             Immersive Archive
           </p>
@@ -141,12 +160,14 @@ export default function CinematicGallery() {
             Through the lens
           </h2>
           <p className="mx-auto mt-4 max-w-md text-sm text-white/40">
-            Every frame floats into view. Hover to feel the color of the moment.
+            3D depth on every frame. Hover and tilt — feel the space.
           </p>
         </div>
 
-        {/* All photos visible — masonry-style grid */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5" style={{ perspective: "1200px" }}>
+        <div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5"
+          style={{ perspective: "1400px", transformStyle: "preserve-3d" }}
+        >
           {SHOTS.map((shot, i) => (
             <div
               key={shot.title + i}
@@ -154,17 +175,20 @@ export default function CinematicGallery() {
                 cardsRef.current[i] = el;
               }}
               className={
-                "group relative overflow-hidden bg-black will-change-transform " +
+                "group relative overflow-hidden bg-black shadow-[0_25px_60px_rgba(0,0,0,0.5)] will-change-transform transition-transform duration-200 ease-out " +
                 (shot.span || "") +
                 (shot.span && shot.span.includes("row-span-2")
                   ? " min-h-[420px] md:min-h-[560px]"
                   : " aspect-3/4")
               }
+              style={{ transformStyle: "preserve-3d" }}
+              onMouseMove={(e) => applyTilt(e.currentTarget, e, 14)}
               onMouseEnter={() => {
                 setHoverAccent(shot.accent);
                 setGrain(true);
               }}
-              onMouseLeave={() => {
+              onMouseLeave={(e) => {
+                resetTilt(e.currentTarget);
                 setHoverAccent(null);
                 setGrain(false);
               }}
@@ -178,7 +202,7 @@ export default function CinematicGallery() {
                   className="h-[115%] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-90" />
-                <div className="absolute inset-x-0 bottom-0 p-5 translate-y-2 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 translate-y-2 p-5 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-gold">
                     {shot.title}
                   </span>
