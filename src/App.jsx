@@ -8,7 +8,6 @@ const Homepage = lazy(() => import("./pages/Homepage"));
 const About = lazy(() => import("./pages/About"));
 const ContactSection = lazy(() => import("./pages/ContactSection"));
 const GridGallery = lazy(() => import("./pages/Gallery"));
-const ThroughTheLens = lazy(() => import("./pages/ThroughTheLens"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -47,7 +46,6 @@ function AppRoutes() {
             <Route index element={<Homepage />} />
             <Route path="about" element={<About />} />
             <Route path="gallery" element={<GridGallery />} />
-            <Route path="through-the-lens" element={<ThroughTheLens />} />
             <Route path="contact" element={<ContactSection />} />
             <Route path="*" element={<NotFound />} />
           </Route>

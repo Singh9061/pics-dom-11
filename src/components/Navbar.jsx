@@ -5,14 +5,13 @@ import { FiMenu, FiX } from "react-icons/fi";
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { name: "Through the Lens", path: "/through-the-lens" },
   { name: "Gallery", path: "/gallery" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" },
 ];
 
 // Pages with dark full-bleed heroes need light nav text at the top
-const darkHeroPaths = ["/", "/through-the-lens"];
+const darkHeroPaths = ["/"];
 
 // Custom Camera Aperture SVG Icon to match the 'O' in DOM
 const CameraApertureIcon = ({ className = "w-4 h-4" }) => (
