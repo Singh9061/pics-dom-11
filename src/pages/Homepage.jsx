@@ -4,6 +4,9 @@ import HeroSection from "../pageComponents/homepage/Herosection";
 const CinematicGallery = lazy(() =>
   import("../pageComponents/homepage/CinematicGallery")
 );
+const InstagramReels = lazy(() =>
+  import("../pageComponents/homepage/InstagramReels")
+);
 const AlbumCollection = lazy(() =>
   import("../pageComponents/homepage/AlbumCollection")
 );
@@ -24,11 +27,15 @@ const SectionSkeleton = () => (
 export default function Homepage() {
   return (
     <>
-      {/* Hero: video only — no 3D lens glitch */}
+      {/* Hero: video only — untouched */}
       <HeroSection />
 
       <Suspense fallback={<SectionSkeleton />}>
         <CinematicGallery />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <InstagramReels />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
