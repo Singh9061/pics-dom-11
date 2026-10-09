@@ -5,23 +5,16 @@ import { FiMenu, FiX } from "react-icons/fi";
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { name: "Process", path: "/process" },
+  { name: "Through the Lens", path: "/through-the-lens" },
   { name: "Gallery", path: "/gallery" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" },
 ];
 
-// Pages with dark full-bleed heroes need light nav text at the top
-const darkHeroPaths = ["/", "/process"];
+const darkHeroPaths = ["/", "/through-the-lens"];
 
-// Custom Camera Aperture SVG Icon to match the 'O' in DOM
 const CameraApertureIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    viewBox="0 0 100 100"
-    className={className}
-    fill="currentColor"
-    aria-hidden="true"
-  >
+  <svg viewBox="0 0 100 100" className={className} fill="currentColor" aria-hidden="true">
     <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="4" />
     <polygon points="50,15 82,34 70,72 50,85 18,66 30,28" fill="none" />
     <path d="M50 10 L78 36 L62 38 Z" />
@@ -36,13 +29,11 @@ const CameraApertureIcon = ({ className = "w-4 h-4" }) => (
 export default function Navbar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-
   const navRef = useRef(null);
   const menuRef = useRef(null);
   const mobileLinksRef = useRef([]);
   const desktopLinksRef = useRef([]);
 
-  /* ---------------- GSAP Scroll & Route Interpolation ---------------- */
   useEffect(() => {
     const isDarkHero = darkHeroPaths.includes(location.pathname);
 
@@ -55,53 +46,47 @@ export default function Navbar() {
           height: "4.5rem",
           duration: 0.4,
           ease: "power2.out",
-          overwrite: "auto"
+          overwrite: "auto",
         });
-
         if (isDarkHero) {
           gsap.to(navRef.current.querySelectorAll(".nav-link-item"), { color: "var(--color-text, #1c1a17)", opacity: 0.6, duration: 0.3 });
           gsap.to(navRef.current.querySelectorAll(".nav-link-item.active-link"), { color: "var(--color-text, #1c1a17)", opacity: 1, duration: 0.3 });
           gsap.to(navRef.current.querySelector(".brand-text-wrapper"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
           gsap.to(navRef.current.querySelector(".menu-toggle-btn"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
         }
+      } else if (isDarkHero) {
+        gsap.to(navRef.current, {
+          backgroundColor: "rgba(255, 255, 255, 0.07)",
+          borderBottomColor: "rgba(255, 255, 255, 0.12)",
+          backdropFilter: "blur(12px)",
+          height: "5rem",
+          duration: 0.4,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+        gsap.to(navRef.current.querySelectorAll(".nav-link-item"), { color: "#ffffff", opacity: 0.7, duration: 0.3 });
+        gsap.to(navRef.current.querySelectorAll(".nav-link-item.active-link"), { color: "#ffffff", opacity: 1, duration: 0.3 });
+        gsap.to(navRef.current.querySelector(".brand-text-wrapper"), { color: "#ffffff", duration: 0.3 });
+        gsap.to(navRef.current.querySelector(".menu-toggle-btn"), { color: "#ffffff", duration: 0.3 });
       } else {
-        if (isDarkHero) {
-          gsap.to(navRef.current, {
-            backgroundColor: "rgba(255, 255, 255, 0.07)",
-            borderBottomColor: "rgba(255, 255, 255, 0.12)",
-            backdropFilter: "blur(12px)",
-            height: "5rem",
-            duration: 0.4,
-            ease: "power2.out",
-            overwrite: "auto"
-          });
-
-          gsap.to(navRef.current.querySelectorAll(".nav-link-item"), { color: "#ffffff", opacity: 0.7, duration: 0.3 });
-          gsap.to(navRef.current.querySelectorAll(".nav-link-item.active-link"), { color: "#ffffff", opacity: 1, duration: 0.3 });
-          gsap.to(navRef.current.querySelector(".brand-text-wrapper"), { color: "#ffffff", duration: 0.3 });
-          gsap.to(navRef.current.querySelector(".menu-toggle-btn"), { color: "#ffffff", duration: 0.3 });
-        } else {
-          gsap.to(navRef.current, {
-            backgroundColor: "transparent",
-            borderBottomColor: "transparent",
-            backdropFilter: "blur(0px)",
-            height: "5rem",
-            duration: 0.4,
-            ease: "power2.out",
-            overwrite: "auto"
-          });
-
-          gsap.to(navRef.current.querySelectorAll(".nav-link-item"), { color: "var(--color-text, #1c1a17)", opacity: 0.6, duration: 0.3 });
-          gsap.to(navRef.current.querySelectorAll(".nav-link-item.active-link"), { color: "var(--color-text, #1c1a17)", opacity: 1, duration: 0.3 });
-          gsap.to(navRef.current.querySelector(".brand-text-wrapper"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
-          gsap.to(navRef.current.querySelector(".menu-toggle-btn"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
-        }
+        gsap.to(navRef.current, {
+          backgroundColor: "transparent",
+          borderBottomColor: "transparent",
+          backdropFilter: "blur(0px)",
+          height: "5rem",
+          duration: 0.4,
+          ease: "power2.out",
+          overwrite: "auto",
+        });
+        gsap.to(navRef.current.querySelectorAll(".nav-link-item"), { color: "var(--color-text, #1c1a17)", opacity: 0.6, duration: 0.3 });
+        gsap.to(navRef.current.querySelectorAll(".nav-link-item.active-link"), { color: "var(--color-text, #1c1a17)", opacity: 1, duration: 0.3 });
+        gsap.to(navRef.current.querySelector(".brand-text-wrapper"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
+        gsap.to(navRef.current.querySelector(".menu-toggle-btn"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
       }
     };
 
     window.addEventListener("scroll", handleScroll);
     handleScroll();
-
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
 
@@ -121,37 +106,18 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!menuRef.current) return;
-
     if (isOpen) {
       const tl = gsap.timeline();
-
-      tl.to(menuRef.current, {
-        x: 0,
-        duration: 0.5,
-        ease: "power4.out",
-      });
-
-      tl.fromTo(
-        mobileLinksRef.current,
-        { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, stagger: 0.06, duration: 0.45, ease: "power3.out" },
-        "-=0.3"
-      );
+      tl.to(menuRef.current, { x: 0, duration: 0.5, ease: "power4.out" });
+      tl.fromTo(mobileLinksRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.06, duration: 0.45, ease: "power3.out" }, "-=0.3");
     } else {
-      gsap.to(menuRef.current, {
-        x: "100%",
-        duration: 0.4,
-        ease: "power3.inOut"
-      });
+      gsap.to(menuRef.current, { x: "100%", duration: 0.4, ease: "power3.inOut" });
     }
   }, [isOpen]);
 
   return (
     <>
-      <nav
-        ref={navRef}
-        className="fixed inset-x-0 top-0 z-50 overflow-hidden border-b border-transparent bg-transparent transition-colors duration-200"
-      >
+      <nav ref={navRef} className="fixed inset-x-0 top-0 z-50 overflow-hidden border-b border-transparent bg-transparent transition-colors duration-200">
         <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center group py-1">
             <div className="brand-text-wrapper flex flex-col items-center justify-center text-text transition-colors duration-300">
@@ -179,71 +145,41 @@ export default function Navbar() {
                   ref={(el) => (desktopLinksRef.current[index] = el)}
                   onMouseEnter={() => handleMouseEnter(index)}
                   onMouseLeave={() => handleMouseLeave(index)}
-                  className={`nav-link-item relative py-1 text-xs font-semibold uppercase tracking-[0.2em] transition-opacity duration-300 text-text ${isActive ? "opacity-100 active-link" : "opacity-60"
-                    }`}
+                  className={`nav-link-item relative py-1 text-xs font-semibold uppercase tracking-[0.2em] transition-opacity duration-300 text-text ${isActive ? "opacity-100 active-link" : "opacity-60"}`}
                 >
                   {name}
-                  <span
-                    className="nav-line absolute bottom-0 left-0 h-px w-full bg-current"
-                    style={{
-                      transform: isActive ? "scaleX(1)" : "scaleX(0)",
-                      transformOrigin: "left center"
-                    }}
-                  />
+                  <span className="nav-line absolute bottom-0 left-0 h-px w-full bg-current" style={{ transform: isActive ? "scaleX(1)" : "scaleX(0)", transformOrigin: "left center" }} />
                 </Link>
               );
             })}
           </div>
 
           <div className="flex items-center lg:hidden">
-            <button
-              onClick={() => setIsOpen(true)}
-              className="menu-toggle-btn text-text p-1 hover:opacity-70 transition-opacity cursor-pointer"
-              aria-label="Open directory navigation"
-            >
+            <button onClick={() => setIsOpen(true)} className="menu-toggle-btn text-text p-1 hover:opacity-70 transition-opacity cursor-pointer" aria-label="Open menu">
               <FiMenu size={24} />
             </button>
           </div>
         </div>
       </nav>
 
-      <div
-        ref={menuRef}
-        style={{ transform: "translateX(100%)" }}
-        className="fixed inset-0 z-60 flex flex-col justify-between bg-bg border-l border-gold/10 px-8 py-12 sm:px-12 md:px-16 w-full sm:max-w-md ml-auto shadow-2xl"
-      >
+      <div ref={menuRef} style={{ transform: "translateX(100%)" }} className="fixed inset-0 z-60 flex flex-col justify-between bg-bg border-l border-gold/10 px-8 py-12 sm:px-12 md:px-16 w-full sm:max-w-md ml-auto shadow-2xl">
         <div className="flex justify-end w-full">
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-text p-2 hover:opacity-70 transition-opacity cursor-pointer"
-            aria-label="Close directory navigation"
-          >
+          <button onClick={() => setIsOpen(false)} className="text-text p-2 hover:opacity-70 transition-opacity cursor-pointer" aria-label="Close menu">
             <FiX size={26} />
           </button>
         </div>
-
         <div className="space-y-6 my-auto">
           {navLinks.map(({ name, path }, index) => {
             const isActive = location.pathname === path;
             return (
-              <div
-                key={path}
-                ref={(el) => (mobileLinksRef.current[index] = el)}
-                className="overflow-hidden py-1"
-              >
-                <Link
-                  to={path}
-                  onClick={() => setIsOpen(false)}
-                  className={`block font-serif text-3xl font-light uppercase tracking-[0.15em] transition-all ${isActive ? "text-text pl-2 border-l-2 border-gold font-normal" : "text-text opacity-50 hover:opacity-100"
-                    }`}
-                >
+              <div key={path} ref={(el) => (mobileLinksRef.current[index] = el)} className="overflow-hidden py-1">
+                <Link to={path} onClick={() => setIsOpen(false)} className={`block font-serif text-3xl font-light uppercase tracking-[0.15em] transition-all ${isActive ? "text-text pl-2 border-l-2 border-gold font-normal" : "text-text opacity-50 hover:opacity-100"}`}>
                   {name}
                 </Link>
               </div>
             );
           })}
         </div>
-
         <div className="pt-8 border-t border-gold/10 flex justify-between items-center text-[10px] uppercase tracking-[0.2em] text-text-muted">
           <span>Pics Dom Raebareli</span>
           <span>© 2026</span>

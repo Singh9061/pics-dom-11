@@ -1,11 +1,11 @@
 import Homepage from "./Homepage";
 import About from "./About";
 import ContactSection from './ContactSection';
-import Process from "./Process";
+import ThroughTheLens from "./ThroughTheLens";
 
 export {
     Homepage,
     About,
     ContactSection,
-    Process
+    ThroughTheLens
 }

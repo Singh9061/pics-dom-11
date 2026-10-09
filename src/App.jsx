@@ -8,7 +8,7 @@ const Homepage = lazy(() => import("./pages/Homepage"));
 const About = lazy(() => import("./pages/About"));
 const ContactSection = lazy(() => import("./pages/ContactSection"));
 const GridGallery = lazy(() => import("./pages/Gallery"));
-const Process = lazy(() => import("./pages/Process"));
+const ThroughTheLens = lazy(() => import("./pages/ThroughTheLens"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -19,9 +19,7 @@ const PageLoader = () => (
 
 function AppRoutes() {
   const location = useLocation();
-  const [showSplash, setShowSplash] = useState(() => {
-    return location.pathname === "/";
-  });
+  const [showSplash, setShowSplash] = useState(() => location.pathname === "/");
 
   const handleSplashFinish = () => {
     sessionStorage.setItem("hasSeenSplash", "true");
@@ -40,7 +38,7 @@ function AppRoutes() {
             <Route index element={<Homepage />} />
             <Route path="about" element={<About />} />
             <Route path="gallery" element={<GridGallery />} />
-            <Route path="process" element={<Process />} />
+            <Route path="through-the-lens" element={<ThroughTheLens />} />
             <Route path="contact" element={<ContactSection />} />
             <Route path="*" element={<NotFound />} />
           </Route>
