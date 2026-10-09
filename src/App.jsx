@@ -8,6 +8,7 @@ const Homepage = lazy(() => import("./pages/Homepage"));
 const About = lazy(() => import("./pages/About"));
 const ContactSection = lazy(() => import("./pages/ContactSection"));
 const GridGallery = lazy(() => import("./pages/Gallery"));
+const Process = lazy(() => import("./pages/Process"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -19,14 +20,7 @@ const PageLoader = () => (
 function AppRoutes() {
   const location = useLocation();
   const [showSplash, setShowSplash] = useState(() => {
-    // Always show splash on home for now so you can test easily
-    // (comment the next 2 lines and uncomment the sessionStorage version later)
     return location.pathname === "/";
-
-    // Original (show only once per session):
-    // const isHome = location.pathname === "/";
-    // const hasSeenSplash = sessionStorage.getItem("hasSeenSplash");
-    // return isHome && !hasSeenSplash;
   });
 
   const handleSplashFinish = () => {
@@ -46,6 +40,7 @@ function AppRoutes() {
             <Route index element={<Homepage />} />
             <Route path="about" element={<About />} />
             <Route path="gallery" element={<GridGallery />} />
+            <Route path="process" element={<Process />} />
             <Route path="contact" element={<ContactSection />} />
             <Route path="*" element={<NotFound />} />
           </Route>

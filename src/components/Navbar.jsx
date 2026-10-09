@@ -5,13 +5,14 @@ import { FiMenu, FiX } from "react-icons/fi";
 
 const navLinks = [
   { name: "Home", path: "/" },
+  { name: "Process", path: "/process" },
   { name: "Gallery", path: "/gallery" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" },
 ];
 
 // Pages with dark full-bleed heroes need light nav text at the top
-const darkHeroPaths = ["/"];
+const darkHeroPaths = ["/", "/process"];
 
 // Custom Camera Aperture SVG Icon to match the 'O' in DOM
 const CameraApertureIcon = ({ className = "w-4 h-4" }) => (
@@ -47,7 +48,6 @@ export default function Navbar() {
 
     const handleScroll = () => {
       if (window.scrollY > 30) {
-        // Scrolled State
         gsap.to(navRef.current, {
           backgroundColor: "rgba(250, 250, 250, 0.95)",
           borderBottomColor: "rgba(197, 168, 128, 0.2)",
@@ -65,7 +65,6 @@ export default function Navbar() {
           gsap.to(navRef.current.querySelector(".menu-toggle-btn"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
         }
       } else {
-        // Top / Idle State
         if (isDarkHero) {
           gsap.to(navRef.current, {
             backgroundColor: "rgba(255, 255, 255, 0.07)",
@@ -106,7 +105,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
 
-  /* ---------------- GSAP Desktop Hover Interaction ---------------- */
   const handleMouseEnter = (index) => {
     const line = desktopLinksRef.current[index]?.querySelector(".nav-line");
     if (line && location.pathname !== navLinks[index].path) {
@@ -121,7 +119,6 @@ export default function Navbar() {
     }
   };
 
-  /* ---------------- GSAP Mobile Drawer Sequence ---------------- */
   useEffect(() => {
     if (!menuRef.current) return;
 
@@ -151,18 +148,13 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Primary Navigation Shell */}
       <nav
         ref={navRef}
         className="fixed inset-x-0 top-0 z-50 overflow-hidden border-b border-transparent bg-transparent transition-colors duration-200"
       >
         <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
-
-          {/* Brand Logo Layout Matching the Image Design */}
           <Link to="/" className="flex items-center group py-1">
             <div className="brand-text-wrapper flex flex-col items-center justify-center text-text transition-colors duration-300">
-
-              {/* Main Brand Title: PICS DOM with Shutter Icon */}
               <div className="flex items-center font-extrabold text-lg sm:text-xl md:text-2xl tracking-wider leading-none uppercase select-none">
                 <span>PICS</span>
                 <span className="ml-1.5 flex items-center">
@@ -171,16 +163,12 @@ export default function Navbar() {
                   M
                 </span>
               </div>
-
-              {/* Sub-Brand Location: RAEBARELI */}
               <span className="font-sans text-[8px] sm:text-[9px] font-bold tracking-[0.45em] leading-tight uppercase w-full text-center mt-0.5 opacity-90 select-none">
                 RAEBARELI
               </span>
-
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden items-center gap-8 xl:gap-10 lg:flex">
             {navLinks.map(({ name, path }, index) => {
               const isActive = location.pathname === path;
@@ -207,7 +195,6 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Mobile Actions Drawer Anchor */}
           <div className="flex items-center lg:hidden">
             <button
               onClick={() => setIsOpen(true)}
@@ -220,7 +207,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Menu Drawer Overlay */}
       <div
         ref={menuRef}
         style={{ transform: "translateX(100%)" }}
