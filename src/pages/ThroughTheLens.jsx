@@ -140,21 +140,24 @@ export default function ThroughTheLens() {
     if (!root) return;
 
     const ctx = gsap.context(() => {
-      /* ── APERTURE OPEN ── */
+      /* ── APERTURE OPEN (correct: start full black, open to reveal, then hide) ── */
       if (apertureRef.current) {
-        gsap.fromTo(
-          apertureRef.current,
-          { clipPath: "circle(0% at 50% 50%)" },
-          {
-            clipPath: "circle(150% at 50% 50%)",
-            duration: 1.8,
-            ease: "power3.inOut",
-          }
-        );
+        gsap
+          .timeline()
+          .fromTo(
+            apertureRef.current,
+            { clipPath: "circle(150% at 50% 50%)" },
+            {
+              clipPath: "circle(0% at 50% 50%)",
+              duration: 1.6,
+              ease: "power3.inOut",
+            }
+          )
+          .set(apertureRef.current, { display: "none" });
       }
 
-      /* ── HERO ENTRANCE (max weight) ── */
-      const heroTl = gsap.timeline({ delay: 0.3 });
+      /* ── HERO ENTRANCE ── */
+      const heroTl = gsap.timeline({ delay: 0.4 });
       heroTl
         .from(".hero-label", {
           y: 40,
@@ -166,12 +169,11 @@ export default function ThroughTheLens() {
         .from(
           ".hero-title-line",
           {
-            y: 120,
+            y: 100,
             opacity: 0,
-            filter: "blur(20px)",
-            rotateX: 40,
-            duration: 1.5,
-            stagger: 0.2,
+            filter: "blur(16px)",
+            duration: 1.4,
+            stagger: 0.18,
             ease: "power4.out",
           },
           "-=0.7"
@@ -179,39 +181,39 @@ export default function ThroughTheLens() {
         .from(
           ".hero-sub",
           {
-            y: 40,
+            y: 30,
             opacity: 0,
-            filter: "blur(10px)",
-            duration: 1.2,
+            filter: "blur(8px)",
+            duration: 1.1,
             ease: "power3.out",
           },
-          "-=0.8"
+          "-=0.7"
         )
         .from(
           ".hero-dots span",
           {
             scale: 0,
             opacity: 0,
-            duration: 0.6,
-            stagger: 0.08,
+            duration: 0.5,
+            stagger: 0.07,
             ease: "back.out(3)",
           },
-          "-=0.6"
+          "-=0.5"
         );
 
       /* ── HERO SCRUB OUT ── */
       if (heroRef.current) {
         gsap.to(heroRef.current, {
-          scale: 0.75,
-          opacity: 0,
-          filter: "blur(14px)",
-          y: -80,
+          scale: 0.82,
+          opacity: 0.25,
+          filter: "blur(10px)",
+          y: -60,
           ease: "none",
           scrollTrigger: {
             trigger: heroRef.current,
             start: "top top",
             end: "bottom top",
-            scrub: 1.5,
+            scrub: 1.4,
           },
         });
       }
@@ -224,16 +226,16 @@ export default function ThroughTheLens() {
         const pin = pinRef.current;
         if (!track || !pin) return;
 
-        const totalWidth = track.scrollWidth - window.innerWidth;
+        const getTotal = () => track.scrollWidth - window.innerWidth;
 
         gsap.to(track, {
-          x: -totalWidth,
+          x: () => -getTotal(),
           ease: "none",
           scrollTrigger: {
             trigger: pin,
             start: "top top",
-            end: () => `+=${totalWidth * 1.4}`,
-            scrub: 1.2,
+            end: () => `+=${getTotal() * 1.35}`,
+            scrub: 1.15,
             pin: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
@@ -253,75 +255,24 @@ export default function ThroughTheLens() {
           },
         });
 
-        /* each panel entrance while horizontal scrolling */
-        gsap.utils.toArray(".h-panel").forEach((panel, i) => {
+        gsap.utils.toArray(".h-panel").forEach((panel) => {
           const card = panel.querySelector(".h-card");
-          const num = panel.querySelector(".h-num");
-          const icon = panel.querySelector(".h-icon");
-
           if (card) {
             gsap.fromTo(
               card,
-              {
-                y: 100,
-                opacity: 0,
-                scale: 0.8,
-                filter: "blur(24px)",
-                rotateY: i % 2 === 0 ? -25 : 25,
-              },
+              { y: 60, opacity: 0.4, scale: 0.92 },
               {
                 y: 0,
                 opacity: 1,
                 scale: 1,
-                filter: "blur(0px)",
-                rotateY: 0,
-                duration: 1.4,
-                ease: "power4.out",
-                scrollTrigger: {
-                  trigger: pin,
-                  containerAnimation: gsap.getById
-                    ? undefined
-                    : undefined,
-                  start: () => `top+=${i * (totalWidth / steps.length) * 0.7} top`,
-                  end: () => `top+=${(i + 1) * (totalWidth / steps.length)} top`,
-                  scrub: 1.5,
-                },
-              }
-            );
-          }
-
-          if (num) {
-            gsap.fromTo(
-              num,
-              { opacity: 0, scale: 2.5, filter: "blur(30px)" },
-              {
-                opacity: 0.07,
-                scale: 1,
-                filter: "blur(0px)",
                 ease: "none",
                 scrollTrigger: {
-                  trigger: pin,
-                  start: () => `top+=${i * (totalWidth / steps.length) * 0.6} top`,
-                  end: () => `top+=${(i + 0.5) * (totalWidth / steps.length)} top`,
+                  trigger: panel,
+                  containerAnimation: undefined,
+                  start: "left 80%",
+                  end: "left 40%",
                   scrub: 1,
-                },
-              }
-            );
-          }
-
-          if (icon) {
-            gsap.fromTo(
-              icon,
-              { scale: 0, rotate: -180 },
-              {
-                scale: 1,
-                rotate: 0,
-                ease: "back.out(2)",
-                scrollTrigger: {
-                  trigger: pin,
-                  start: () => `top+=${i * (totalWidth / steps.length) * 0.65} top`,
-                  end: () => `top+=${(i + 0.4) * (totalWidth / steps.length)} top`,
-                  scrub: 1,
+                  horizontal: true,
                 },
               }
             );
@@ -329,25 +280,20 @@ export default function ThroughTheLens() {
         });
       });
 
-      /* ── MOBILE vertical steps (still heavy) ── */
+      /* ── MOBILE vertical ── */
       mm.add("(max-width: 767px)", () => {
         gsap.utils.toArray(".m-step").forEach((el) => {
           const card = el.querySelector(".m-card");
           if (!card) return;
           gsap.fromTo(
             card,
-            {
-              y: 120,
-              opacity: 0,
-              scale: 0.85,
-              filter: "blur(20px)",
-            },
+            { y: 100, opacity: 0, scale: 0.9, filter: "blur(14px)" },
             {
               y: 0,
               opacity: 1,
               scale: 1,
               filter: "blur(0px)",
-              duration: 1.3,
+              duration: 1.2,
               ease: "power4.out",
               scrollTrigger: {
                 trigger: el,
@@ -361,26 +307,25 @@ export default function ThroughTheLens() {
 
       /* ── REELS ── */
       gsap.from(".reel-card", {
-        y: 120,
+        y: 100,
         opacity: 0,
-        scale: 0.7,
-        filter: "blur(18px)",
-        rotateY: 15,
-        duration: 1.4,
-        stagger: 0.18,
+        scale: 0.85,
+        filter: "blur(12px)",
+        duration: 1.25,
+        stagger: 0.15,
         ease: "power4.out",
         scrollTrigger: {
           trigger: ".reels-section",
-          start: "top 80%",
+          start: "top 82%",
         },
       });
 
       gsap.from(".reels-heading > *", {
-        y: 50,
+        y: 40,
         opacity: 0,
-        filter: "blur(12px)",
-        duration: 1.2,
-        stagger: 0.15,
+        filter: "blur(10px)",
+        duration: 1.1,
+        stagger: 0.12,
         ease: "power4.out",
         scrollTrigger: {
           trigger: ".reels-section",
@@ -390,16 +335,16 @@ export default function ThroughTheLens() {
 
       /* ── CTA ── */
       gsap.from(".cta-el", {
-        y: 80,
+        y: 60,
         opacity: 0,
-        scale: 0.9,
-        filter: "blur(16px)",
-        duration: 1.4,
-        stagger: 0.18,
+        scale: 0.94,
+        filter: "blur(12px)",
+        duration: 1.25,
+        stagger: 0.15,
         ease: "power4.out",
         scrollTrigger: {
           trigger: ".cta-section",
-          start: "top 82%",
+          start: "top 85%",
         },
       });
     }, root);
@@ -409,18 +354,18 @@ export default function ThroughTheLens() {
 
   return (
     <div ref={rootRef} className="relative w-full overflow-x-hidden bg-[#030303] text-white">
-      {/* Aperture veil */}
+      {/* Aperture veil — starts covering, opens, then removed */}
       <div
         ref={apertureRef}
         className="pointer-events-none fixed inset-0 z-[100] bg-black"
-        style={{ clipPath: "circle(0% at 50% 50%)" }}
+        style={{ clipPath: "circle(150% at 50% 50%)" }}
       />
 
-      {/* Progress bar (desktop) */}
+      {/* Progress bar */}
       <div className="pointer-events-none fixed left-0 right-0 top-0 z-50 hidden h-[2px] bg-white/5 md:block">
         <div
           ref={progressRef}
-          className="h-full bg-gold transition-[width] duration-100"
+          className="h-full bg-gold"
           style={{ width: "0%" }}
         />
       </div>
@@ -443,26 +388,18 @@ export default function ThroughTheLens() {
         className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center will-change-transform"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.14)_0%,transparent_55%)]" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay"
-          style={{
-            backgroundImage:
-              "url(data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E)",
-            backgroundSize: "200px",
-          }}
-        />
 
         <p className="hero-label relative z-10 mb-6 text-[11px] uppercase tracking-[0.55em] text-gold/80">
           Process · Through the Lens
         </p>
 
         <div className="relative z-10 overflow-hidden">
-          <h1 className="hero-title-line font-serif text-4xl font-light uppercase leading-[1.1] tracking-[0.14em] sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="hero-title-line font-serif text-4xl font-light uppercase leading-[1.15] tracking-[0.12em] sm:text-5xl md:text-6xl lg:text-7xl">
             From first conversation
           </h1>
         </div>
         <div className="relative z-10 overflow-hidden">
-          <h1 className="hero-title-line mt-2 font-serif text-4xl font-light uppercase leading-[1.1] tracking-[0.14em] sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="hero-title-line mt-2 font-serif text-4xl font-light uppercase leading-[1.15] tracking-[0.12em] sm:text-5xl md:text-6xl lg:text-7xl">
             to{" "}
             <span className="font-semibold italic text-gold">lasting legacy</span>
           </h1>
@@ -500,27 +437,26 @@ export default function ThroughTheLens() {
           className="flex h-screen will-change-transform"
           style={{ width: `${steps.length * 100}vw` }}
         >
-          {steps.map((step, i) => {
+          {steps.map((step) => {
             const Icon = step.icon;
             return (
               <div
                 key={step.num}
-                className="h-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center px-16"
+                className="h-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center px-12 lg:px-20"
               >
-                {/* giant number bg */}
-                <span className="h-num pointer-events-none absolute font-serif text-[28vw] font-light leading-none text-white select-none">
+                <span className="pointer-events-none absolute font-serif text-[22vw] font-light leading-none text-white/[0.06] select-none">
                   {step.num}
                 </span>
 
-                <div className="h-card relative z-10 w-full max-w-xl rounded-3xl border border-white/10 bg-white/[0.04] p-12 backdrop-blur-xl">
-                  <div className="h-icon mb-8 flex h-16 w-16 items-center justify-center rounded-full border border-gold/40 bg-gold/10">
+                <div className="h-card relative z-10 w-full max-w-xl rounded-3xl border border-white/10 bg-white/[0.045] p-10 lg:p-12 backdrop-blur-xl">
+                  <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-full border border-gold/40 bg-gold/10">
                     <Icon size={26} className="text-gold" />
                   </div>
 
                   <p className="font-mono text-xs tracking-[0.35em] text-gold/70">
                     {step.num}
                   </p>
-                  <h2 className="mt-3 font-serif text-4xl font-light tracking-[0.08em] text-white">
+                  <h2 className="mt-3 font-serif text-3xl font-light tracking-[0.08em] text-white lg:text-4xl">
                     {step.title}
                   </h2>
                   <p className="mt-2 text-[12px] uppercase tracking-[0.3em] text-gold/50">
