@@ -5,10 +5,14 @@ import { FiMenu, FiX } from "react-icons/fi";
 
 const navLinks = [
   { name: "Home", path: "/" },
+  { name: "Through the Lens", path: "/through-the-lens" },
   { name: "Gallery", path: "/gallery" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" },
 ];
+
+// Pages with dark full-bleed heroes need light nav text at the top
+const darkHeroPaths = ["/", "/through-the-lens"];
 
 // Custom Camera Aperture SVG Icon to match the 'O' in DOM
 const CameraApertureIcon = ({ className = "w-4 h-4" }) => (
@@ -40,7 +44,7 @@ export default function Navbar() {
 
   /* ---------------- GSAP Scroll & Route Interpolation ---------------- */
   useEffect(() => {
-    const isHome = location.pathname === "/";
+    const isDarkHero = darkHeroPaths.includes(location.pathname);
 
     const handleScroll = () => {
       if (window.scrollY > 30) {
@@ -55,7 +59,7 @@ export default function Navbar() {
           overwrite: "auto"
         });
 
-        if (isHome) {
+        if (isDarkHero) {
           gsap.to(navRef.current.querySelectorAll(".nav-link-item"), { color: "var(--color-text, #1c1a17)", opacity: 0.6, duration: 0.3 });
           gsap.to(navRef.current.querySelectorAll(".nav-link-item.active-link"), { color: "var(--color-text, #1c1a17)", opacity: 1, duration: 0.3 });
           gsap.to(navRef.current.querySelector(".brand-text-wrapper"), { color: "var(--color-text, #1c1a17)", duration: 0.3 });
@@ -63,7 +67,7 @@ export default function Navbar() {
         }
       } else {
         // Top / Idle State
-        if (isHome) {
+        if (isDarkHero) {
           gsap.to(navRef.current, {
             backgroundColor: "rgba(255, 255, 255, 0.07)",
             borderBottomColor: "rgba(255, 255, 255, 0.12)",
@@ -178,7 +182,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden items-center gap-10 lg:flex">
+          <div className="hidden items-center gap-8 xl:gap-10 lg:flex">
             {navLinks.map(({ name, path }, index) => {
               const isActive = location.pathname === path;
               return (
