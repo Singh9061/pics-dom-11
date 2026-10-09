@@ -11,7 +11,6 @@ import {
 } from "react-icons/fi";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Tilt3D from "../components/Tilt3D";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -58,32 +57,11 @@ const steps = [
   },
 ];
 
-/* Native site videos — drop files in public/reels/ and list here */
 const REEL_VIDEOS = [
-  {
-    id: "reel-1",
-    title: "Sacred Moments",
-    src: "/reels/reel-1.mp4",
-    poster: "",
-  },
-  {
-    id: "reel-2",
-    title: "Royal Procession",
-    src: "/reels/reel-2.mp4",
-    poster: "",
-  },
-  {
-    id: "reel-3",
-    title: "Heritage Frames",
-    src: "/reels/reel-3.mp4",
-    poster: "",
-  },
-  {
-    id: "reel-4",
-    title: "Timeless Legacy",
-    src: "/reels/reel-4.mp4",
-    poster: "",
-  },
+  { id: "reel-1", title: "Sacred Moments", src: "/reels/reel-1.mp4" },
+  { id: "reel-2", title: "Royal Procession", src: "/reels/reel-2.mp4" },
+  { id: "reel-3", title: "Heritage Frames", src: "/reels/reel-3.mp4" },
+  { id: "reel-4", title: "Timeless Legacy", src: "/reels/reel-4.mp4" },
 ];
 
 function VideoCard({ video, index }) {
@@ -104,52 +82,44 @@ function VideoCard({ video, index }) {
   };
 
   return (
-    <div className="reel-video-card group relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/10 bg-black will-change-transform">
+    <div className="reel-card group relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/10 bg-black">
       {!failed ? (
         <video
           ref={videoRef}
           src={video.src}
-          poster={video.poster || undefined}
           playsInline
           loop
           muted
           preload="metadata"
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className="h-full w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-125"
           onError={() => setFailed(true)}
           onEnded={() => setPlaying(false)}
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[#0c0c0c] px-4 text-center">
           <FiPlay size={28} className="text-gold/50" />
-          <p className="text-[10px] uppercase tracking-[0.25em] text-white/40">
-            Video pending upload
-          </p>
-          <p className="text-[9px] text-white/25">{video.src}</p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-white/40">Video pending</p>
         </div>
       )}
-
       {!failed && (
         <button
           type="button"
           onClick={toggle}
-          className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 transition-opacity group-hover:bg-black/30"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-black/25 transition-all duration-500 group-hover:bg-black/40"
           aria-label={playing ? "Pause" : "Play"}
         >
           {!playing && (
-            <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-black/50 text-white backdrop-blur-sm transition-transform duration-500 group-hover:scale-110">
-              <FiPlay size={22} className="ml-0.5" />
+            <span className="flex h-16 w-16 items-center justify-center rounded-full border border-white/40 bg-black/60 text-white backdrop-blur-md transition-all duration-500 group-hover:scale-125 group-hover:border-gold/60 group-hover:shadow-[0_0_40px_rgba(197,168,128,0.4)]">
+              <FiPlay size={24} className="ml-1" />
             </span>
           )}
         </button>
       )}
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-10">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-gold/70">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black via-black/60 to-transparent px-4 pb-5 pt-16">
+        <p className="text-[10px] uppercase tracking-[0.35em] text-gold/80">
           {String(index + 1).padStart(2, "0")}
         </p>
-        <p className="mt-1 font-serif text-sm tracking-wide text-white/90">
-          {video.title}
-        </p>
+        <p className="mt-1.5 font-serif text-base tracking-wide text-white">{video.title}</p>
       </div>
     </div>
   );
@@ -158,9 +128,11 @@ function VideoCard({ video, index }) {
 export default function ThroughTheLens() {
   const rootRef = useRef(null);
   const heroRef = useRef(null);
-  const lineFillRef = useRef(null);
-  const stepsRef = useRef([]);
+  const pinRef = useRef(null);
+  const trackRef = useRef(null);
+  const progressRef = useRef(null);
   const progressLabelRef = useRef(null);
+  const apertureRef = useRef(null);
   const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
@@ -168,209 +140,266 @@ export default function ThroughTheLens() {
     if (!root) return;
 
     const ctx = gsap.context(() => {
-      /* ===== HERO — pinned + scale + blur scrub (heavy) ===== */
-      const heroEls = gsap.utils.toArray(".ttl-hero-el");
-      gsap.from(heroEls, {
-        y: 80,
-        opacity: 0,
-        filter: "blur(16px)",
-        scale: 0.92,
-        duration: 1.4,
-        stagger: 0.18,
-        ease: "power4.out",
-        delay: 0.15,
-      });
+      /* ── APERTURE OPEN ── */
+      if (apertureRef.current) {
+        gsap.fromTo(
+          apertureRef.current,
+          { clipPath: "circle(0% at 50% 50%)" },
+          {
+            clipPath: "circle(150% at 50% 50%)",
+            duration: 1.8,
+            ease: "power3.inOut",
+          }
+        );
+      }
 
+      /* ── HERO ENTRANCE (max weight) ── */
+      const heroTl = gsap.timeline({ delay: 0.3 });
+      heroTl
+        .from(".hero-label", {
+          y: 40,
+          opacity: 0,
+          filter: "blur(12px)",
+          duration: 1.2,
+          ease: "power4.out",
+        })
+        .from(
+          ".hero-title-line",
+          {
+            y: 120,
+            opacity: 0,
+            filter: "blur(20px)",
+            rotateX: 40,
+            duration: 1.5,
+            stagger: 0.2,
+            ease: "power4.out",
+          },
+          "-=0.7"
+        )
+        .from(
+          ".hero-sub",
+          {
+            y: 40,
+            opacity: 0,
+            filter: "blur(10px)",
+            duration: 1.2,
+            ease: "power3.out",
+          },
+          "-=0.8"
+        )
+        .from(
+          ".hero-dots span",
+          {
+            scale: 0,
+            opacity: 0,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "back.out(3)",
+          },
+          "-=0.6"
+        );
+
+      /* ── HERO SCRUB OUT ── */
       if (heroRef.current) {
         gsap.to(heroRef.current, {
-          scale: 0.88,
-          opacity: 0.35,
-          filter: "blur(6px)",
+          scale: 0.75,
+          opacity: 0,
+          filter: "blur(14px)",
+          y: -80,
           ease: "none",
           scrollTrigger: {
             trigger: heroRef.current,
             start: "top top",
             end: "bottom top",
-            scrub: 1.2,
-            pin: false,
+            scrub: 1.5,
           },
         });
       }
 
-      /* ===== VERTICAL LINE FILL — scrubbed progress ===== */
-      if (lineFillRef.current) {
-        gsap.fromTo(
-          lineFillRef.current,
-          { scaleY: 0 },
-          {
-            scaleY: 1,
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".workflow-track",
-              start: "top 50%",
-              end: "bottom 25%",
-              scrub: 1,
-              onUpdate: (self) => {
-                const idx = Math.min(
-                  steps.length - 1,
-                  Math.floor(self.progress * steps.length)
-                );
-                setActiveStep(idx);
-                if (progressLabelRef.current) {
-                  progressLabelRef.current.textContent = `${String(idx + 1).padStart(2, "0")} / ${String(steps.length).padStart(2, "0")}`;
-                }
-              },
+      /* ── PINNED HORIZONTAL SCROLL (desktop) ── */
+      const mm = gsap.matchMedia();
+
+      mm.add("(min-width: 768px)", () => {
+        const track = trackRef.current;
+        const pin = pinRef.current;
+        if (!track || !pin) return;
+
+        const totalWidth = track.scrollWidth - window.innerWidth;
+
+        gsap.to(track, {
+          x: -totalWidth,
+          ease: "none",
+          scrollTrigger: {
+            trigger: pin,
+            start: "top top",
+            end: () => `+=${totalWidth * 1.4}`,
+            scrub: 1.2,
+            pin: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              const idx = Math.min(
+                steps.length - 1,
+                Math.floor(self.progress * steps.length)
+              );
+              setActiveStep(idx);
+              if (progressRef.current) {
+                progressRef.current.style.width = `${self.progress * 100}%`;
+              }
+              if (progressLabelRef.current) {
+                progressLabelRef.current.textContent = `${String(idx + 1).padStart(2, "0")} / 0${steps.length}`;
+              }
             },
+          },
+        });
+
+        /* each panel entrance while horizontal scrolling */
+        gsap.utils.toArray(".h-panel").forEach((panel, i) => {
+          const card = panel.querySelector(".h-card");
+          const num = panel.querySelector(".h-num");
+          const icon = panel.querySelector(".h-icon");
+
+          if (card) {
+            gsap.fromTo(
+              card,
+              {
+                y: 100,
+                opacity: 0,
+                scale: 0.8,
+                filter: "blur(24px)",
+                rotateY: i % 2 === 0 ? -25 : 25,
+              },
+              {
+                y: 0,
+                opacity: 1,
+                scale: 1,
+                filter: "blur(0px)",
+                rotateY: 0,
+                duration: 1.4,
+                ease: "power4.out",
+                scrollTrigger: {
+                  trigger: pin,
+                  containerAnimation: gsap.getById
+                    ? undefined
+                    : undefined,
+                  start: () => `top+=${i * (totalWidth / steps.length) * 0.7} top`,
+                  end: () => `top+=${(i + 1) * (totalWidth / steps.length)} top`,
+                  scrub: 1.5,
+                },
+              }
+            );
           }
-        );
-      }
 
-      /* ===== STEPS — heavy entrance (x / rotate / blur / scale) ===== */
-      stepsRef.current.forEach((el, i) => {
-        if (!el) return;
-        const isLeft = i % 2 === 0;
-        const card = el.querySelector(".step-card");
-        const node = el.querySelector(".step-node");
-        const numEl = el.querySelector(".step-num");
-        const bar = el.querySelector(".step-accent-bar");
-        const title = el.querySelector(".step-title");
-        const copy = el.querySelector(".step-copy");
+          if (num) {
+            gsap.fromTo(
+              num,
+              { opacity: 0, scale: 2.5, filter: "blur(30px)" },
+              {
+                opacity: 0.07,
+                scale: 1,
+                filter: "blur(0px)",
+                ease: "none",
+                scrollTrigger: {
+                  trigger: pin,
+                  start: () => `top+=${i * (totalWidth / steps.length) * 0.6} top`,
+                  end: () => `top+=${(i + 0.5) * (totalWidth / steps.length)} top`,
+                  scrub: 1,
+                },
+              }
+            );
+          }
 
-        if (card) {
+          if (icon) {
+            gsap.fromTo(
+              icon,
+              { scale: 0, rotate: -180 },
+              {
+                scale: 1,
+                rotate: 0,
+                ease: "back.out(2)",
+                scrollTrigger: {
+                  trigger: pin,
+                  start: () => `top+=${i * (totalWidth / steps.length) * 0.65} top`,
+                  end: () => `top+=${(i + 0.4) * (totalWidth / steps.length)} top`,
+                  scrub: 1,
+                },
+              }
+            );
+          }
+        });
+      });
+
+      /* ── MOBILE vertical steps (still heavy) ── */
+      mm.add("(max-width: 767px)", () => {
+        gsap.utils.toArray(".m-step").forEach((el) => {
+          const card = el.querySelector(".m-card");
+          if (!card) return;
           gsap.fromTo(
             card,
             {
-              x: window.innerWidth >= 768 ? (isLeft ? -160 : 160) : 0,
-              y: window.innerWidth >= 768 ? 40 : 90,
+              y: 120,
               opacity: 0,
-              filter: "blur(20px)",
               scale: 0.85,
-              rotateY: window.innerWidth >= 768 ? (isLeft ? -18 : 18) : 0,
+              filter: "blur(20px)",
             },
             {
-              x: 0,
               y: 0,
               opacity: 1,
+              scale: 1,
               filter: "blur(0px)",
-              scale: 1,
-              rotateY: 0,
-              duration: 1.35,
+              duration: 1.3,
               ease: "power4.out",
               scrollTrigger: {
                 trigger: el,
-                start: "top 85%",
+                start: "top 88%",
                 toggleActions: "play none none none",
               },
             }
           );
-        }
-
-        if (node) {
-          gsap.fromTo(
-            node,
-            { scale: 0, opacity: 0, rotationY: -30 },
-            {
-              scale: 1,
-              opacity: 1,
-              rotateY: 0,
-              duration: 0.9,
-              ease: "back.out(2.8)",
-              scrollTrigger: {
-                trigger: el,
-                start: "top 85%",
-                toggleActions: "play none none none",
-              },
-            }
-          );
-        }
-
-        if (numEl) {
-          gsap.fromTo(
-            numEl,
-            { opacity: 0, y: 60, scale: 1.4 },
-            {
-              opacity: 0.08,
-              y: 0,
-              scale: 1,
-              duration: 1.5,
-              ease: "power3.out",
-              scrollTrigger: { trigger: el, start: "top 82%" },
-            }
-          );
-        }
-
-        if (bar) {
-          gsap.fromTo(
-            bar,
-            { scaleX: 0 },
-            {
-              scaleX: 1,
-              duration: 1.1,
-              ease: "power4.out",
-              delay: 0.35,
-              scrollTrigger: { trigger: el, start: "top 82%" },
-            }
-          );
-        }
-
-        if (title) {
-          gsap.fromTo(
-            title,
-            { y: 30, opacity: 0 },
-            {
-              y: 0,
-              opacity: 1,
-              duration: 1,
-              delay: 0.2,
-              ease: "power3.out",
-              scrollTrigger: { trigger: el, start: "top 82%" },
-            }
-          );
-        }
-
-        if (copy) {
-          gsap.fromTo(
-            copy,
-            { y: 24, opacity: 0 },
-            {
-              y: 0,
-              opacity: 1,
-              duration: 1,
-              delay: 0.35,
-              ease: "power3.out",
-              scrollTrigger: { trigger: el, start: "top 82%" },
-            }
-          );
-        }
+        });
       });
 
-      /* ===== REELS — stagger + scale ===== */
-      gsap.from(".reel-video-card", {
-        y: 80,
+      /* ── REELS ── */
+      gsap.from(".reel-card", {
+        y: 120,
         opacity: 0,
-        scale: 0.88,
-        filter: "blur(10px)",
-        duration: 1.15,
-        stagger: 0.14,
+        scale: 0.7,
+        filter: "blur(18px)",
+        rotateY: 15,
+        duration: 1.4,
+        stagger: 0.18,
         ease: "power4.out",
         scrollTrigger: {
-          trigger: ".reels-video-grid",
-          start: "top 88%",
+          trigger: ".reels-section",
+          start: "top 80%",
         },
       });
 
-      /* ===== CTA ===== */
-      gsap.from(".ttl-cta-el", {
-        y: 60,
+      gsap.from(".reels-heading > *", {
+        y: 50,
         opacity: 0,
         filter: "blur(12px)",
-        scale: 0.94,
         duration: 1.2,
         stagger: 0.15,
         ease: "power4.out",
         scrollTrigger: {
-          trigger: ".ttl-cta",
+          trigger: ".reels-section",
           start: "top 85%",
+        },
+      });
+
+      /* ── CTA ── */
+      gsap.from(".cta-el", {
+        y: 80,
+        opacity: 0,
+        scale: 0.9,
+        filter: "blur(16px)",
+        duration: 1.4,
+        stagger: 0.18,
+        ease: "power4.out",
+        scrollTrigger: {
+          trigger: ".cta-section",
+          start: "top 82%",
         },
       });
     }, root);
@@ -379,157 +408,133 @@ export default function ThroughTheLens() {
   }, []);
 
   return (
-    <div
-      ref={rootRef}
-      className="relative w-full overflow-x-hidden bg-[#050505] text-white"
-    >
-      {/* Floating progress pill */}
-      <div className="pointer-events-none fixed bottom-8 right-6 z-40 hidden md:block">
-        <div className="rounded-full border border-gold/20 bg-black/60 px-4 py-2 backdrop-blur-md">
+    <div ref={rootRef} className="relative w-full overflow-x-hidden bg-[#030303] text-white">
+      {/* Aperture veil */}
+      <div
+        ref={apertureRef}
+        className="pointer-events-none fixed inset-0 z-[100] bg-black"
+        style={{ clipPath: "circle(0% at 50% 50%)" }}
+      />
+
+      {/* Progress bar (desktop) */}
+      <div className="pointer-events-none fixed left-0 right-0 top-0 z-50 hidden h-[2px] bg-white/5 md:block">
+        <div
+          ref={progressRef}
+          className="h-full bg-gold transition-[width] duration-100"
+          style={{ width: "0%" }}
+        />
+      </div>
+
+      {/* Floating counter */}
+      <div className="pointer-events-none fixed bottom-8 right-6 z-50 hidden md:block">
+        <div className="rounded-full border border-gold/25 bg-black/70 px-5 py-2.5 backdrop-blur-xl">
           <span
             ref={progressLabelRef}
-            className="font-mono text-[10px] tracking-[0.25em] text-gold/80"
+            className="font-mono text-[11px] tracking-[0.3em] text-gold"
           >
             01 / 05
           </span>
         </div>
       </div>
 
-      {/* ===== HERO ===== */}
+      {/* ════════ HERO ════════ */}
       <section
         ref={heroRef}
-        className="relative flex min-h-[80vh] flex-col items-center justify-center px-6 pb-24 pt-36 text-center md:px-12 will-change-transform"
+        className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center will-change-transform"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.12),transparent_60%)]" />
-        <div className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.14)_0%,transparent_55%)]" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay"
           style={{
             backgroundImage:
-              "url(data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E)",
-            backgroundSize: "180px",
+              "url(data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E)",
+            backgroundSize: "200px",
           }}
         />
 
-        <span className="ttl-hero-el relative z-10 mb-5 block text-[10px] uppercase tracking-[0.5em] text-gold/80">
+        <p className="hero-label relative z-10 mb-6 text-[11px] uppercase tracking-[0.55em] text-gold/80">
           Process · Through the Lens
-        </span>
-        <h1 className="ttl-hero-el relative z-10 max-w-4xl font-serif text-4xl font-light uppercase leading-tight tracking-[0.12em] sm:text-5xl md:text-6xl lg:text-7xl">
-          From first conversation
-          <br />
-          to{" "}
-          <span className="font-semibold italic text-gold">lasting legacy</span>
-        </h1>
-        <p className="ttl-hero-el relative z-10 mx-auto mt-8 max-w-xl text-sm leading-8 tracking-wide text-white/55 font-light">
-          Our process, our films — every frame intentional, every step considered.
         </p>
 
-        <div className="ttl-hero-el relative z-10 mt-16 flex items-center gap-3">
+        <div className="relative z-10 overflow-hidden">
+          <h1 className="hero-title-line font-serif text-4xl font-light uppercase leading-[1.1] tracking-[0.14em] sm:text-5xl md:text-6xl lg:text-7xl">
+            From first conversation
+          </h1>
+        </div>
+        <div className="relative z-10 overflow-hidden">
+          <h1 className="hero-title-line mt-2 font-serif text-4xl font-light uppercase leading-[1.1] tracking-[0.14em] sm:text-5xl md:text-6xl lg:text-7xl">
+            to{" "}
+            <span className="font-semibold italic text-gold">lasting legacy</span>
+          </h1>
+        </div>
+
+        <p className="hero-sub relative z-10 mx-auto mt-10 max-w-lg text-sm leading-8 tracking-wide text-white/50 font-light">
+          Five stages. Every frame intentional. Scroll to enter the process.
+        </p>
+
+        <div className="hero-dots relative z-10 mt-16 flex items-center gap-2.5">
           {steps.map((_, i) => (
-            <div
+            <span
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-700 ${
-                i === activeStep ? "w-10 bg-gold shadow-[0_0_12px_rgba(197,168,128,0.5)]" : "w-1.5 bg-white/20"
+              className={`block h-1.5 rounded-full transition-all duration-700 ${
+                i === activeStep
+                  ? "w-10 bg-gold shadow-[0_0_16px_rgba(197,168,128,0.6)]"
+                  : "w-1.5 bg-white/20"
               }`}
             />
           ))}
         </div>
+
+        <div className="absolute bottom-10 left-1/2 z-10 -translate-x-1/2">
+          <div className="flex flex-col items-center gap-2 opacity-40">
+            <span className="text-[9px] uppercase tracking-[0.4em]">Scroll</span>
+            <div className="h-8 w-px animate-pulse bg-gradient-to-b from-gold to-transparent" />
+          </div>
+        </div>
       </section>
 
-      {/* ===== WORKFLOW ===== */}
-      <section className="workflow-track relative mx-auto max-w-5xl px-6 pb-32 md:px-12">
-        {/* Center line */}
-        <div className="pointer-events-none absolute left-1/2 top-0 hidden h-full w-px -translate-x-1/2 bg-white/8 md:block">
-          <div
-            ref={lineFillRef}
-            className="origin-top h-full w-full bg-gradient-to-b from-gold via-gold/70 to-transparent"
-            style={{ transform: "scaleY(0)" }}
-          />
-        </div>
-
-        <div className="space-y-24 md:space-y-36">
+      {/* ════════ PINNED HORIZONTAL (desktop) ════════ */}
+      <section ref={pinRef} className="relative hidden md:block">
+        <div
+          ref={trackRef}
+          className="flex h-screen will-change-transform"
+          style={{ width: `${steps.length * 100}vw` }}
+        >
           {steps.map((step, i) => {
             const Icon = step.icon;
-            const isLeft = i % 2 === 0;
-            const isActive = activeStep === i;
-
             return (
               <div
                 key={step.num}
-                ref={(el) => (stepsRef.current[i] = el)}
-                className={`relative flex flex-col items-center md:flex-row ${
-                  isLeft ? "md:justify-start" : "md:justify-end"
-                }`}
+                className="h-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center px-16"
               >
-                {/* Node on center line */}
-                <div className="step-node absolute left-1/2 top-2 z-20 hidden -translate-x-1/2 md:flex">
-                  <div
-                    className={`relative flex h-16 w-16 items-center justify-center rounded-full border transition-all duration-700 ${
-                      isActive
-                        ? "border-gold bg-gold/20 shadow-[0_0_50px_rgba(197,168,128,0.55)] scale-110"
-                        : "border-gold/35 bg-[#0a0a0a]"
-                    }`}
-                  >
-                    <Icon size={22} className="text-gold" />
-                    {isActive && (
-                      <span className="absolute inset-0 animate-ping rounded-full border border-gold/40 opacity-40" />
-                    )}
+                {/* giant number bg */}
+                <span className="h-num pointer-events-none absolute font-serif text-[28vw] font-light leading-none text-white select-none">
+                  {step.num}
+                </span>
+
+                <div className="h-card relative z-10 w-full max-w-xl rounded-3xl border border-white/10 bg-white/[0.04] p-12 backdrop-blur-xl">
+                  <div className="h-icon mb-8 flex h-16 w-16 items-center justify-center rounded-full border border-gold/40 bg-gold/10">
+                    <Icon size={26} className="text-gold" />
                   </div>
-                </div>
 
-                {/* Card with 3D tilt */}
-                <div
-                  className={`relative w-full max-w-md md:w-[44%] ${
-                    isLeft ? "md:mr-auto" : "md:ml-auto"
-                  }`}
-                >
-                  <Tilt3D max={10} scale={1.02} glare>
-                    <div
-                      className={`step-card relative overflow-hidden rounded-2xl border p-8 backdrop-blur-sm transition-all duration-700 ${
-                        isActive
-                          ? "border-gold/40 bg-white/[0.07] shadow-[0_20px_60px_rgba(197,168,128,0.12)]"
-                          : "border-white/8 bg-white/[0.03]"
-                      }`}
-                    >
-                      <span className="step-num pointer-events-none absolute -right-2 -top-4 font-serif text-[7.5rem] font-light leading-none text-white select-none">
-                        {step.num}
-                      </span>
+                  <p className="font-mono text-xs tracking-[0.35em] text-gold/70">
+                    {step.num}
+                  </p>
+                  <h2 className="mt-3 font-serif text-4xl font-light tracking-[0.08em] text-white">
+                    {step.title}
+                  </h2>
+                  <p className="mt-2 text-[12px] uppercase tracking-[0.3em] text-gold/50">
+                    {step.subtitle}
+                  </p>
 
-                      <div className="relative z-10 mb-5 flex items-center gap-4 md:hidden">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-gold/30 bg-gold/10">
-                          <Icon size={16} className="text-gold" />
-                        </div>
-                        <span className="font-mono text-xs tracking-widest text-gold/70">
-                          {step.num}
-                        </span>
-                      </div>
+                  <div className="mt-6 h-px w-20 bg-gradient-to-r from-gold to-transparent" />
 
-                      <div className="relative z-10 mb-1 hidden md:block">
-                        <span className="font-mono text-xs tracking-widest text-gold/70">
-                          {step.num}
-                        </span>
-                      </div>
-
-                      <h3 className="step-title relative z-10 mt-2 font-serif text-2xl font-light tracking-[0.08em] text-white">
-                        {step.title}
-                      </h3>
-                      <p className="relative z-10 mt-1 text-[11px] uppercase tracking-[0.25em] text-gold/60">
-                        {step.subtitle}
-                      </p>
-
-                      <div className="relative z-10 mt-5 h-px w-16 origin-left overflow-hidden bg-white/10">
-                        <div
-                          className="step-accent-bar h-full w-full origin-left bg-gold"
-                          style={{ transform: "scaleX(0)" }}
-                        />
-                      </div>
-
-                      <p className="step-copy relative z-10 mt-5 text-sm leading-7 tracking-wide text-white/50 font-light">
-                        {step.copy}
-                      </p>
-                      <p className="relative z-10 mt-6 text-[10px] uppercase tracking-[0.3em] text-gold/40">
-                        {step.accent}
-                      </p>
-                    </div>
-                  </Tilt3D>
+                  <p className="mt-6 text-[15px] leading-8 tracking-wide text-white/55 font-light">
+                    {step.copy}
+                  </p>
+                  <p className="mt-8 text-[11px] uppercase tracking-[0.35em] text-gold/40">
+                    {step.accent}
+                  </p>
                 </div>
               </div>
             );
@@ -537,56 +542,90 @@ export default function ThroughTheLens() {
         </div>
       </section>
 
-      {/* ===== REELS ===== */}
-      <section className="relative border-t border-white/10 bg-[#08060c] px-6 py-28 md:px-12">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(90,40,110,0.18)_0%,transparent_55%)]" />
-        <div className="relative z-10 mx-auto max-w-7xl">
-          <div className="mb-16 text-center">
-            <span className="mb-3 block text-[10px] uppercase tracking-[0.4em] text-gold/70">
-              Films
-            </span>
-            <h2 className="font-serif text-3xl font-light uppercase tracking-[0.12em] text-white sm:text-4xl md:text-5xl">
-              Through the{" "}
-              <span className="font-semibold italic text-gold">Lens</span>
-            </h2>
-            <p className="mx-auto mt-4 max-w-md text-sm text-white/45 font-light">
-              Short films from recent celebrations — played on-site, not embedded.
-            </p>
-          </div>
-
-          <div className="reels-video-grid mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {REEL_VIDEOS.map((v, i) => (
-              <VideoCard key={v.id} video={v} index={i} />
-            ))}
-          </div>
+      {/* ════════ MOBILE vertical ════════ */}
+      <section className="relative px-5 pb-24 pt-8 md:hidden">
+        <div className="space-y-16">
+          {steps.map((step) => {
+            const Icon = step.icon;
+            return (
+              <div key={step.num} className="m-step">
+                <div className="m-card rounded-2xl border border-white/10 bg-white/[0.04] p-7 backdrop-blur-sm">
+                  <div className="mb-5 flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/30 bg-gold/10">
+                      <Icon size={18} className="text-gold" />
+                    </div>
+                    <span className="font-mono text-xs tracking-widest text-gold/70">
+                      {step.num}
+                    </span>
+                  </div>
+                  <h3 className="font-serif text-2xl font-light tracking-wide text-white">
+                    {step.title}
+                  </h3>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-gold/50">
+                    {step.subtitle}
+                  </p>
+                  <div className="mt-4 h-px w-12 bg-gold/40" />
+                  <p className="mt-4 text-sm leading-7 text-white/50 font-light">
+                    {step.copy}
+                  </p>
+                  <p className="mt-5 text-[10px] uppercase tracking-[0.3em] text-gold/35">
+                    {step.accent}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* ===== CTA ===== */}
-      <section className="ttl-cta relative border-t border-gold/10 px-6 py-32 text-center md:px-12">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.1),transparent_55%)]" />
+      {/* ════════ REELS ════════ */}
+      <section className="reels-section relative border-t border-white/8 bg-[#06040a] px-6 py-32 md:px-12">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(90,40,110,0.2)_0%,transparent_50%)]" />
+
+        <div className="reels-heading relative z-10 mx-auto mb-20 max-w-3xl text-center">
+          <p className="mb-4 text-[11px] uppercase tracking-[0.5em] text-gold/70">Films</p>
+          <h2 className="font-serif text-4xl font-light uppercase tracking-[0.12em] text-white md:text-5xl">
+            Through the <span className="font-semibold italic text-gold">Lens</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-md text-sm text-white/40 font-light">
+            Short films from recent celebrations — played on-site.
+          </p>
+        </div>
+
+        <div className="relative z-10 mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {REEL_VIDEOS.map((v, i) => (
+            <VideoCard key={v.id} video={v} index={i} />
+          ))}
+        </div>
+      </section>
+
+      {/* ════════ CTA ════════ */}
+      <section className="cta-section relative border-t border-gold/10 px-6 py-36 text-center md:px-12">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.12),transparent_50%)]" />
+
         <div className="relative z-10 mx-auto max-w-2xl">
-          <span className="ttl-cta-el block text-[10px] uppercase tracking-[0.45em] text-gold/80">
+          <p className="cta-el text-[11px] uppercase tracking-[0.5em] text-gold/80">
             Ready when you are
-          </span>
-          <h2 className="ttl-cta-el mt-5 font-serif text-3xl font-light tracking-[0.1em] sm:text-4xl md:text-5xl">
+          </p>
+          <h2 className="cta-el mt-6 font-serif text-4xl font-light tracking-[0.1em] md:text-5xl">
             Let's begin your{" "}
             <span className="font-semibold italic text-gold">archive</span>
           </h2>
-          <div className="ttl-cta-el mt-14 flex flex-col items-center justify-center gap-4 sm:flex-row">
+
+          <div className="cta-el mt-14 flex flex-col items-center justify-center gap-5 sm:flex-row">
             <Link
               to="/contact"
-              className="group inline-flex h-13 w-56 items-center justify-center gap-3 bg-gold px-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition-all duration-300 hover:bg-gold-hover hover:shadow-[0_0_30px_rgba(197,168,128,0.35)]"
+              className="group inline-flex h-14 w-60 items-center justify-center gap-3 bg-gold text-[12px] font-semibold uppercase tracking-[0.25em] text-black transition-all duration-500 hover:bg-gold-hover hover:shadow-[0_0_50px_rgba(197,168,128,0.45)]"
             >
               <span>Start Inquiry</span>
               <FiArrowRight
-                size={14}
-                className="transition-transform duration-300 group-hover:translate-x-1"
+                size={16}
+                className="transition-transform duration-500 group-hover:translate-x-1.5"
               />
             </Link>
             <Link
               to="/gallery"
-              className="inline-flex h-13 w-56 items-center justify-center border border-white/25 bg-white/5 px-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition-all duration-300 hover:border-white hover:bg-white/10"
+              className="inline-flex h-14 w-60 items-center justify-center border border-white/20 bg-white/5 text-[12px] font-semibold uppercase tracking-[0.25em] text-white transition-all duration-500 hover:border-white/50 hover:bg-white/10"
             >
               View Gallery
             </Link>
