@@ -2,24 +2,8 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  c1_pic1,
-  c1_pic2,
-  c1_pic3,
-  c1_pic4,
-  c1_pic5,
-  c1_pic6,
-  c1_pic7,
-  c1_pic8,
-  c1_pic9,
-  c1_pic10,
-} from "../../Assets/picture/client1";
-import {
-  c2_pic1,
-  c2_pic2,
-  c2_pic11,
-  c2_pic12,
-} from "../../Assets/picture/client2";
+import { c1_pic1, c1_pic10 } from "../../Assets/picture/client1";
+import { c2_pic2 } from "../../Assets/picture/client2";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -27,17 +11,6 @@ const FRAMES = [
   { src: c1_pic10, title: "Sacred Phere", sub: "Heritage Ritual" },
   { src: c2_pic2, title: "Royal Baraat", sub: "Procession" },
   { src: c1_pic1, title: "Crimson Sindoor", sub: "Intimate" },
-  { src: c1_pic5, title: "Palace Union", sub: "Destination" },
-  { src: c1_pic7, title: "Firelight", sub: "Sangeet" },
-  { src: c1_pic8, title: "Golden Hour", sub: "Portrait" },
-  { src: c2_pic11, title: "Legacy", sub: "Family Archive" },
-  { src: c1_pic3, title: "Quiet Glance", sub: "Candid" },
-  { src: c1_pic2, title: "Veil & Gold", sub: "Bridal" },
-  { src: c1_pic4, title: "Sacred Steps", sub: "Ritual" },
-  { src: c1_pic6, title: "Together", sub: "Couple" },
-  { src: c1_pic9, title: "Celebration", sub: "Joy" },
-  { src: c2_pic1, title: "Arrival", sub: "Entrance" },
-  { src: c2_pic12, title: "Forever", sub: "Portrait" },
 ];
 
 const TOTAL = FRAMES.length;
@@ -308,7 +281,6 @@ export default function CinematicGallery() {
         return () => window.removeEventListener("resize", onResize);
       });
 
-      /* Mobile: reliable visible cards */
       mm.add("(max-width: 767px)", () => {
         gsap.utils.toArray(".ttl-m-card").forEach((card) => {
           const imgWrap = card.querySelector(".ttl-m-photo");
@@ -427,12 +399,11 @@ export default function CinematicGallery() {
         <div className="flex items-center gap-2 rounded-full border border-gold/25 bg-black/70 px-3 py-1.5 backdrop-blur-xl">
           <ApertureRing className="h-4 w-4 text-gold/70" />
           <span ref={labelRef} className="font-mono text-[10px] tracking-[0.25em] text-gold">
-            01 / {String(TOTAL).padStart(2, "0")}
+            01 / 0{TOTAL}
           </span>
         </div>
       </div>
 
-      {/* DESKTOP */}
       <div ref={pinRef} className="relative hidden md:block">
         <div
           ref={trackRef}
@@ -471,7 +442,7 @@ export default function CinematicGallery() {
                         src={frame.src}
                         alt={frame.title}
                         className="ttl-main-img absolute inset-0 h-full w-full object-cover"
-                        loading={i < 2 ? "eager" : "lazy"}
+                        loading="eager"
                       />
                       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_38%,rgba(0,0,0,0.8)_100%)]" />
                     </div>
@@ -507,14 +478,9 @@ export default function CinematicGallery() {
         </div>
       </div>
 
-      {/* MOBILE — single column, always-visible circular photos */}
       <div className="relative flex flex-col items-center gap-10 px-5 pb-12 pt-2 md:hidden">
         {FRAMES.map((frame, i) => (
-          <div
-            key={`m-${frame.title}-${i}`}
-            className="ttl-m-card w-full max-w-[300px]"
-          >
-            {/* padding so outer rings stay inside card box */}
+          <div key={`m-${frame.title}-${i}`} className="ttl-m-card w-full max-w-[300px]">
             <div className="relative mx-auto aspect-square w-[78%] max-w-[240px]">
               <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-8%] z-20 text-gold/40">
                 <ApertureRing className="h-full w-full" blades={6} opacity={0.14} />
@@ -522,28 +488,22 @@ export default function CinematicGallery() {
               <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-16%] z-20 text-gold/22">
                 <ApertureRing className="h-full w-full" blades={8} opacity={0.08} />
               </div>
-
               <div className="ttl-m-photo relative z-10 h-full w-full overflow-hidden rounded-full ring-1 ring-gold/20">
                 <img
                   src={frame.src}
                   alt={frame.title}
                   className="h-full w-full object-cover"
-                  loading={i < 3 ? "eager" : "lazy"}
+                  loading="eager"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.55)_100%)]" />
               </div>
             </div>
-
             <div className="ttl-m-text mt-5 text-center">
               <p className="font-mono text-[10px] tracking-[0.3em] text-gold/70">
                 {String(i + 1).padStart(2, "0")}
               </p>
-              <h3 className="mt-1 font-serif text-xl font-light tracking-wide">
-                {frame.title}
-              </h3>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-white/45">
-                {frame.sub}
-              </p>
+              <h3 className="mt-1 font-serif text-xl font-light tracking-wide">{frame.title}</h3>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-white/45">{frame.sub}</p>
             </div>
           </div>
         ))}
