@@ -25,6 +25,56 @@ const FRAMES = [
   { src: c1_pic3, title: "Quiet Glance", sub: "Candid" },
 ];
 
+/* 6-blade camera aperture SVG ring */
+function ApertureRing({ className = "" }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 200 200"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* outer ring */}
+      <circle
+        cx="100"
+        cy="100"
+        r="96"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        opacity="0.55"
+      />
+      <circle
+        cx="100"
+        cy="100"
+        r="88"
+        stroke="currentColor"
+        strokeWidth="0.75"
+        opacity="0.25"
+      />
+      {/* iris blades */}
+      {[0, 60, 120, 180, 240, 300].map((deg) => (
+        <path
+          key={deg}
+          d="M100 12 L132 78 L100 100 Z"
+          fill="currentColor"
+          opacity="0.18"
+          transform={`rotate(${deg} 100 100)`}
+        />
+      ))}
+      {/* center hole guide */}
+      <circle
+        cx="100"
+        cy="100"
+        r="28"
+        stroke="currentColor"
+        strokeWidth="1"
+        opacity="0.35"
+      />
+      <circle cx="100" cy="100" r="3" fill="currentColor" opacity="0.5" />
+    </svg>
+  );
+}
+
 export default function CinematicGallery() {
   const rootRef = useRef(null);
   const pinRef = useRef(null);
@@ -38,13 +88,13 @@ export default function CinematicGallery() {
     if (!root) return;
 
     const ctx = gsap.context(() => {
-      /* heading entrance */
+      /* heading + aperture icon entrance */
       gsap.from(".ttl-head > *", {
-        y: 60,
+        y: 70,
         opacity: 0,
-        filter: "blur(14px)",
-        duration: 1.3,
-        stagger: 0.14,
+        filter: "blur(16px)",
+        duration: 1.4,
+        stagger: 0.15,
         ease: "power4.out",
         scrollTrigger: {
           trigger: ".ttl-head",
@@ -52,9 +102,33 @@ export default function CinematicGallery() {
         },
       });
 
+      gsap.fromTo(
+        ".ttl-head-ring",
+        { scale: 0.4, opacity: 0, rotation: -90 },
+        {
+          scale: 1,
+          opacity: 1,
+          rotate: 0,
+          duration: 1.8,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: ".ttl-head",
+            start: "top 85%",
+          },
+        }
+      );
+
+      /* continuous slow spin on header ring */
+      gsap.to(".ttl-head-ring", {
+        rotate: 360,
+        duration: 28,
+        ease: "none",
+        repeat: -1,
+      });
+
       const mm = gsap.matchMedia();
 
-      /* ── DESKTOP: pinned horizontal scroll ── */
+      /* ── DESKTOP: pinned horizontal + aperture open ── */
       mm.add("(min-width: 768px)", () => {
         const track = trackRef.current;
         const pin = pinRef.current;
@@ -68,8 +142,8 @@ export default function CinematicGallery() {
           scrollTrigger: {
             trigger: pin,
             start: "top top",
-            end: () => `+=${getTotal() * 1.45}`,
-            scrub: 1.2,
+            end: () => `+=${getTotal() * 1.5}`,
+            scrub: 1.15,
             pin: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
@@ -90,27 +164,97 @@ export default function CinematicGallery() {
         });
 
         gsap.utils.toArray(".ttl-panel").forEach((panel, i) => {
+          const iris = panel.querySelector(".ttl-iris");
           const img = panel.querySelector(".ttl-img");
+          const ring = panel.querySelector(".ttl-ring");
           const meta = panel.querySelector(".ttl-meta");
+          const vignette = panel.querySelector(".ttl-vignette");
+
+          const start = () =>
+            `top+=${(i / FRAMES.length) * getTotal() * 1.25} top`;
+          const mid = () =>
+            `top+=${((i + 0.45) / FRAMES.length) * getTotal() * 1.25} top`;
+          const end = () =>
+            `top+=${((i + 0.85) / FRAMES.length) * getTotal() * 1.25} top`;
+
+          /* aperture iris: closed circle → full open */
+          if (iris) {
+            gsap.fromTo(
+              iris,
+              { clipPath: "circle(0% at 50% 50%)" },
+              {
+                clipPath: "circle(78% at 50% 50%)",
+                ease: "none",
+                scrollTrigger: {
+                  trigger: pin,
+                  start: start(),
+                  end: mid(),
+                  scrub: 1.3,
+                },
+              }
+            );
+          }
 
           if (img) {
             gsap.fromTo(
               img,
-              {
-                scale: 1.35,
-                filter: "blur(18px)",
-                opacity: 0.35,
-              },
+              { scale: 1.45, filter: "blur(20px)" },
               {
                 scale: 1,
                 filter: "blur(0px)",
-                opacity: 1,
                 ease: "none",
                 scrollTrigger: {
                   trigger: pin,
-                  start: () => `top+=${(i / FRAMES.length) * getTotal() * 1.2} top`,
-                  end: () => `top+=${((i + 0.7) / FRAMES.length) * getTotal() * 1.2} top`,
+                  start: start(),
+                  end: end(),
                   scrub: 1.4,
+                },
+              }
+            );
+          }
+
+          /* rotating aperture ring around frame */
+          if (ring) {
+            gsap.fromTo(
+              ring,
+              { scale: 0.55, opacity: 0, rotate: -120 },
+              {
+                scale: 1,
+                opacity: 1,
+                rotate: 0,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: pin,
+                  start: start(),
+                  end: mid(),
+                  scrub: 1.2,
+                },
+              }
+            );
+            gsap.to(ring, {
+              rotate: 45,
+              ease: "none",
+              scrollTrigger: {
+                trigger: pin,
+                start: mid(),
+                end: end(),
+                scrub: 1,
+              },
+            });
+          }
+
+          if (vignette) {
+            gsap.fromTo(
+              vignette,
+              { opacity: 0.9 },
+              {
+                opacity: 0.35,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: pin,
+                  start: start(),
+                  end: mid(),
+                  scrub: 1,
                 },
               }
             );
@@ -119,7 +263,7 @@ export default function CinematicGallery() {
           if (meta) {
             gsap.fromTo(
               meta,
-              { y: 80, opacity: 0, filter: "blur(12px)" },
+              { y: 90, opacity: 0, filter: "blur(14px)" },
               {
                 y: 0,
                 opacity: 1,
@@ -127,9 +271,9 @@ export default function CinematicGallery() {
                 ease: "none",
                 scrollTrigger: {
                   trigger: pin,
-                  start: () => `top+=${(i / FRAMES.length) * getTotal() * 1.2} top`,
-                  end: () => `top+=${((i + 0.55) / FRAMES.length) * getTotal() * 1.2} top`,
-                  scrub: 1.2,
+                  start: mid(),
+                  end: end(),
+                  scrub: 1.15,
                 },
               }
             );
@@ -137,31 +281,63 @@ export default function CinematicGallery() {
         });
       });
 
-      /* ── MOBILE: stacked heavy reveals ── */
+      /* ── MOBILE: aperture open on each card ── */
       mm.add("(max-width: 767px)", () => {
         gsap.utils.toArray(".ttl-m-card").forEach((card) => {
+          const iris = card.querySelector(".ttl-m-iris");
+          const ring = card.querySelector(".ttl-m-ring");
+
           gsap.fromTo(
             card,
-            {
-              y: 100,
-              opacity: 0,
-              scale: 0.9,
-              filter: "blur(16px)",
-            },
+            { y: 80, opacity: 0 },
             {
               y: 0,
               opacity: 1,
-              scale: 1,
-              filter: "blur(0px)",
-              duration: 1.25,
+              duration: 1.1,
               ease: "power4.out",
               scrollTrigger: {
                 trigger: card,
-                start: "top 90%",
+                start: "top 92%",
                 toggleActions: "play none none none",
               },
             }
           );
+
+          if (iris) {
+            gsap.fromTo(
+              iris,
+              { clipPath: "circle(0% at 50% 50%)" },
+              {
+                clipPath: "circle(85% at 50% 50%)",
+                duration: 1.35,
+                ease: "power3.inOut",
+                scrollTrigger: {
+                  trigger: card,
+                  start: "top 88%",
+                  toggleActions: "play none none none",
+                },
+              }
+            );
+          }
+
+          if (ring) {
+            gsap.fromTo(
+              ring,
+              { scale: 0.5, opacity: 0, rotate: -90 },
+              {
+                scale: 1,
+                opacity: 1,
+                rotate: 0,
+                duration: 1.5,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: card,
+                  start: "top 88%",
+                  toggleActions: "play none none none",
+                },
+              }
+            );
+          }
         });
       });
     }, root);
@@ -174,11 +350,13 @@ export default function CinematicGallery() {
       ref={rootRef}
       className="relative overflow-hidden bg-[#050308] text-white"
     >
-      {/* ambient glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.1)_0%,transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.12)_0%,transparent_55%)]" />
 
-      {/* section heading */}
-      <div className="ttl-head relative z-10 mx-auto max-w-4xl px-6 pb-8 pt-28 text-center md:pt-36">
+      {/* section heading + aperture */}
+      <div className="ttl-head relative z-10 mx-auto max-w-4xl px-6 pb-10 pt-28 text-center md:pt-36">
+        <div className="ttl-head-ring mx-auto mb-8 flex h-20 w-20 items-center justify-center text-gold md:h-24 md:w-24">
+          <ApertureRing className="h-full w-full" />
+        </div>
         <p className="text-[10px] uppercase tracking-[0.5em] text-gold/70">
           Signature Experience
         </p>
@@ -186,11 +364,11 @@ export default function CinematicGallery() {
           Through the <span className="font-semibold italic text-gold">lens</span>
         </h2>
         <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-white/40 font-light">
-          Scroll to travel through frames — every moment intentional.
+          Aperture opens. Scroll through the frames.
         </p>
       </div>
 
-      {/* progress (desktop) */}
+      {/* progress */}
       <div className="pointer-events-none fixed left-0 right-0 top-0 z-40 hidden h-[2px] bg-white/5 md:block">
         <div
           ref={progressRef}
@@ -199,7 +377,8 @@ export default function CinematicGallery() {
         />
       </div>
       <div className="pointer-events-none fixed bottom-8 right-6 z-40 hidden md:block">
-        <div className="rounded-full border border-gold/25 bg-black/70 px-5 py-2.5 backdrop-blur-xl">
+        <div className="flex items-center gap-3 rounded-full border border-gold/25 bg-black/70 px-4 py-2 backdrop-blur-xl">
+          <ApertureRing className="h-5 w-5 text-gold/70" />
           <span
             ref={labelRef}
             className="font-mono text-[11px] tracking-[0.3em] text-gold"
@@ -219,24 +398,37 @@ export default function CinematicGallery() {
           {FRAMES.map((frame, i) => (
             <div
               key={frame.title}
-              className="ttl-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center px-10 lg:px-20"
+              className="ttl-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center px-8 lg:px-16"
             >
-              <div className="relative h-[70vh] w-full max-w-5xl overflow-hidden rounded-sm">
-                <img
-                  src={frame.src}
-                  alt={frame.title}
-                  className="ttl-img absolute inset-0 h-full w-full object-cover"
-                  loading={i < 2 ? "eager" : "lazy"}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="ttl-meta absolute bottom-0 left-0 right-0 p-8 lg:p-12">
+              <div className="relative flex aspect-square w-full max-w-[min(78vh,880px)] items-center justify-center">
+                {/* rotating aperture ring */}
+                <div className="ttl-ring pointer-events-none absolute inset-[-6%] z-20 text-gold/50">
+                  <ApertureRing className="h-full w-full" />
+                </div>
+
+                {/* circular iris reveal of photo */}
+                <div
+                  className="ttl-iris relative z-10 h-[88%] w-[88%] overflow-hidden rounded-full"
+                  style={{ clipPath: "circle(0% at 50% 50%)" }}
+                >
+                  <img
+                    src={frame.src}
+                    alt={frame.title}
+                    className="ttl-img absolute inset-0 h-full w-full object-cover"
+                    loading={i < 2 ? "eager" : "lazy"}
+                  />
+                  <div className="ttl-vignette absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.75)_100%)]" />
+                </div>
+
+                {/* title under lens */}
+                <div className="ttl-meta pointer-events-none absolute -bottom-2 left-0 right-0 z-30 translate-y-full pt-8 text-center">
                   <p className="font-mono text-[11px] tracking-[0.4em] text-gold/80">
                     {String(i + 1).padStart(2, "0")}
                   </p>
-                  <h3 className="mt-2 font-serif text-3xl font-light tracking-[0.08em] lg:text-5xl">
+                  <h3 className="mt-2 font-serif text-3xl font-light tracking-[0.08em] lg:text-4xl">
                     {frame.title}
                   </h3>
-                  <p className="mt-2 text-[12px] uppercase tracking-[0.3em] text-white/50">
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-white/45">
                     {frame.sub}
                   </p>
                 </div>
@@ -246,21 +438,28 @@ export default function CinematicGallery() {
         </div>
       </div>
 
-      {/* ════════ MOBILE vertical cards ════════ */}
-      <div className="relative space-y-8 px-5 pb-16 pt-4 md:hidden">
+      {/* ════════ MOBILE ════════ */}
+      <div className="relative space-y-14 px-5 pb-16 pt-4 md:hidden">
         {FRAMES.map((frame, i) => (
-          <div
-            key={frame.title}
-            className="ttl-m-card relative aspect-[4/5] overflow-hidden rounded-sm"
-          >
-            <img
-              src={frame.src}
-              alt={frame.title}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-5">
+          <div key={frame.title} className="ttl-m-card relative mx-auto max-w-sm">
+            <div className="relative mx-auto aspect-square w-full">
+              <div className="ttl-m-ring pointer-events-none absolute inset-[-5%] z-20 text-gold/45">
+                <ApertureRing className="h-full w-full" />
+              </div>
+              <div
+                className="ttl-m-iris relative z-10 h-full w-full overflow-hidden rounded-full"
+                style={{ clipPath: "circle(0% at 50% 50%)" }}
+              >
+                <img
+                  src={frame.src}
+                  alt={frame.title}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_35%,rgba(0,0,0,0.7)_100%)]" />
+              </div>
+            </div>
+            <div className="mt-6 text-center">
               <p className="font-mono text-[10px] tracking-[0.35em] text-gold/70">
                 {String(i + 1).padStart(2, "0")}
               </p>
@@ -275,8 +474,7 @@ export default function CinematicGallery() {
         ))}
       </div>
 
-      {/* footer link */}
-      <div className="relative z-10 flex justify-center pb-20 pt-6">
+      <div className="relative z-10 flex justify-center pb-20 pt-8">
         <Link
           to="/gallery"
           className="text-[11px] uppercase tracking-[0.35em] text-white/40 transition-colors hover:text-gold"
