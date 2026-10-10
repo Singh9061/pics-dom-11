@@ -5,13 +5,12 @@ import { FiMenu, FiX } from "react-icons/fi";
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { name: "Through the Lens", path: "/through-the-lens" },
   { name: "Gallery", path: "/gallery" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" },
 ];
 
-const darkHeroPaths = ["/", "/through-the-lens"];
+const darkHeroPaths = ["/"];
 
 const CameraApertureIcon = ({ className = "w-4 h-4" }) => (
   <svg viewBox="0 0 100 100" className={className} fill="currentColor" aria-hidden="true">
