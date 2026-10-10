@@ -17,7 +17,6 @@ import {
 import {
   c2_pic1,
   c2_pic2,
-  c2_pic3,
   c2_pic11,
   c2_pic12,
 } from "../../Assets/picture/client2";
@@ -94,36 +93,34 @@ export default function CinematicGallery() {
 
     const ctx = gsap.context(() => {
       gsap.from(".ttl-head > *", {
-        y: 60,
+        y: 50,
         opacity: 0,
-        filter: "blur(14px)",
-        duration: 1.35,
-        stagger: 0.12,
+        duration: 1.2,
+        stagger: 0.1,
         ease: "power4.out",
-        scrollTrigger: { trigger: ".ttl-head", start: "top 88%" },
+        scrollTrigger: { trigger: ".ttl-head", start: "top 90%" },
       });
 
       gsap.fromTo(
         ".ttl-head-stack .hs",
-        { scale: 0.25, opacity: 0, rotate: -160 },
+        { scale: 0.4, opacity: 0, rotate: -90 },
         {
           scale: 1,
           opacity: 1,
           rotate: 0,
-          duration: 1.8,
-          stagger: 0.1,
+          duration: 1.5,
+          stagger: 0.08,
           ease: "power3.out",
-          scrollTrigger: { trigger: ".ttl-head", start: "top 88%" },
+          scrollTrigger: { trigger: ".ttl-head", start: "top 90%" },
         }
       );
 
-      gsap.to(".hs-a", { rotate: 360, duration: 22, ease: "none", repeat: -1 });
-      gsap.to(".hs-b", { rotate: -360, duration: 32, ease: "none", repeat: -1 });
-      gsap.to(".hs-c", { rotate: 360, duration: 48, ease: "none", repeat: -1 });
+      gsap.to(".hs-a", { rotate: 360, duration: 24, ease: "none", repeat: -1 });
+      gsap.to(".hs-b", { rotate: -360, duration: 36, ease: "none", repeat: -1 });
+      gsap.to(".hs-c", { rotate: 360, duration: 50, ease: "none", repeat: -1 });
 
       const mm = gsap.matchMedia();
 
-      /* Desktop / tablet landscape: pinned horizontal */
       mm.add("(min-width: 768px)", () => {
         const track = trackRef.current;
         const pin = pinRef.current;
@@ -295,11 +292,10 @@ export default function CinematicGallery() {
           if (meta) {
             gsap.fromTo(
               meta,
-              { y: 70, opacity: 0, filter: "blur(12px)" },
+              { y: 70, opacity: 0 },
               {
                 y: 0,
                 opacity: 1,
-                filter: "blur(0px)",
                 ease: "none",
                 scrollTrigger: { trigger: pin, start: mid(), end: end(), scrub: 1.1 },
               }
@@ -312,20 +308,21 @@ export default function CinematicGallery() {
         return () => window.removeEventListener("resize", onResize);
       });
 
-      /* Mobile vertical */
+      /* Mobile: reliable visible cards */
       mm.add("(max-width: 767px)", () => {
         gsap.utils.toArray(".ttl-m-card").forEach((card) => {
-          const iris = card.querySelector(".ttl-m-iris");
+          const imgWrap = card.querySelector(".ttl-m-photo");
           const rings = card.querySelectorAll(".ttl-m-ring-layer");
+          const text = card.querySelector(".ttl-m-text");
 
           gsap.fromTo(
             card,
-            { y: 70, opacity: 0 },
+            { y: 48, opacity: 0 },
             {
               y: 0,
               opacity: 1,
-              duration: 1.1,
-              ease: "power4.out",
+              duration: 0.9,
+              ease: "power3.out",
               scrollTrigger: {
                 trigger: card,
                 start: "top 92%",
@@ -334,17 +331,17 @@ export default function CinematicGallery() {
             }
           );
 
-          if (iris) {
+          if (imgWrap) {
             gsap.fromTo(
-              iris,
-              { clipPath: "circle(0% at 50% 50%)" },
+              imgWrap,
+              { scale: 0.88 },
               {
-                clipPath: "circle(80% at 50% 50%)",
-                duration: 1.3,
-                ease: "power3.inOut",
+                scale: 1,
+                duration: 1.1,
+                ease: "power3.out",
                 scrollTrigger: {
                   trigger: card,
-                  start: "top 90%",
+                  start: "top 92%",
                   toggleActions: "play none none none",
                 },
               }
@@ -354,22 +351,41 @@ export default function CinematicGallery() {
           rings.forEach((r, ri) => {
             gsap.fromTo(
               r,
-              { scale: 0.3, opacity: 0, rotate: ri % 2 === 0 ? -100 : 100 },
+              { scale: 0.6, opacity: 0, rotate: ri % 2 === 0 ? -60 : 60 },
               {
                 scale: 1,
                 opacity: 1,
                 rotate: 0,
-                duration: 1.45,
-                delay: ri * 0.08,
-                ease: "power3.out",
+                duration: 1.15,
+                delay: 0.05 + ri * 0.08,
+                ease: "power2.out",
                 scrollTrigger: {
                   trigger: card,
-                  start: "top 90%",
+                  start: "top 92%",
                   toggleActions: "play none none none",
                 },
               }
             );
           });
+
+          if (text) {
+            gsap.fromTo(
+              text,
+              { y: 16, opacity: 0 },
+              {
+                y: 0,
+                opacity: 1,
+                duration: 0.8,
+                delay: 0.15,
+                ease: "power2.out",
+                scrollTrigger: {
+                  trigger: card,
+                  start: "top 92%",
+                  toggleActions: "play none none none",
+                },
+              }
+            );
+          }
         });
       });
     }, root);
@@ -378,46 +394,45 @@ export default function CinematicGallery() {
   }, []);
 
   return (
-    <section ref={rootRef} className="relative overflow-hidden bg-[#050308] text-white">
+    <section ref={rootRef} className="relative overflow-x-hidden bg-[#050308] text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.12)_0%,transparent_55%)]" />
 
-      <div className="ttl-head relative z-10 mx-auto max-w-4xl px-4 pb-8 pt-24 text-center sm:px-6 sm:pt-28 md:pb-12 md:pt-36">
-        <div className="ttl-head-stack relative mx-auto mb-8 h-20 w-20 sm:mb-10 sm:h-28 sm:w-28 md:h-36 md:w-36">
+      <div className="ttl-head relative z-10 mx-auto max-w-4xl px-5 pb-6 pt-20 text-center sm:px-6 sm:pb-8 sm:pt-24 md:pb-12 md:pt-36">
+        <div className="ttl-head-stack relative mx-auto mb-6 h-16 w-16 sm:mb-8 sm:h-24 sm:w-24 md:h-36 md:w-36">
           <div className="hs hs-a absolute inset-0 text-gold/50">
             <ApertureRing className="h-full w-full" blades={6} />
           </div>
-          <div className="hs hs-b absolute inset-[-14%] text-gold/28 sm:inset-[-18%]">
+          <div className="hs hs-b absolute inset-[-12%] text-gold/28 sm:inset-[-16%]">
             <ApertureRing className="h-full w-full" blades={8} opacity={0.1} />
           </div>
-          <div className="hs hs-c absolute inset-[-28%] text-gold/14 sm:inset-[-36%]">
+          <div className="hs hs-c absolute inset-[-24%] text-gold/14 sm:inset-[-30%]">
             <ApertureRing className="h-full w-full" blades={6} opacity={0.06} />
           </div>
         </div>
-        <p className="text-[9px] uppercase tracking-[0.45em] text-gold/70 sm:text-[10px] sm:tracking-[0.5em]">
+        <p className="text-[9px] uppercase tracking-[0.4em] text-gold/70 sm:text-[10px]">
           Signature Experience
         </p>
-        <h2 className="mt-3 font-serif text-3xl font-light tracking-[0.08em] sm:mt-4 sm:text-4xl sm:tracking-[0.1em] md:text-6xl">
+        <h2 className="mt-2 font-serif text-[1.75rem] font-light leading-tight tracking-[0.06em] sm:mt-3 sm:text-4xl md:text-6xl">
           Through the <span className="font-semibold italic text-gold">lens</span>
         </h2>
-        <p className="mx-auto mt-4 max-w-md px-2 text-xs leading-6 text-white/40 font-light sm:mt-5 sm:text-sm sm:leading-7">
+        <p className="mx-auto mt-3 max-w-sm text-[11px] leading-5 text-white/40 font-light sm:mt-4 sm:text-sm sm:leading-7">
           {TOTAL} frames · multiple apertures · scroll to open
         </p>
       </div>
 
-      {/* progress — desktop only */}
       <div className="pointer-events-none fixed left-0 right-0 top-0 z-40 hidden h-[2px] bg-white/5 md:block">
         <div ref={progressRef} className="h-full bg-gold" style={{ width: "0%" }} />
       </div>
-      <div className="pointer-events-none fixed bottom-6 right-4 z-40 hidden md:bottom-8 md:right-6 md:block">
-        <div className="flex items-center gap-2 rounded-full border border-gold/25 bg-black/70 px-3 py-1.5 backdrop-blur-xl sm:gap-3 sm:px-4 sm:py-2">
-          <ApertureRing className="h-4 w-4 text-gold/70 sm:h-5 sm:w-5" />
-          <span ref={labelRef} className="font-mono text-[10px] tracking-[0.25em] text-gold sm:text-[11px] sm:tracking-[0.3em]">
+      <div className="pointer-events-none fixed bottom-6 right-4 z-40 hidden md:block">
+        <div className="flex items-center gap-2 rounded-full border border-gold/25 bg-black/70 px-3 py-1.5 backdrop-blur-xl">
+          <ApertureRing className="h-4 w-4 text-gold/70" />
+          <span ref={labelRef} className="font-mono text-[10px] tracking-[0.25em] text-gold">
             01 / {String(TOTAL).padStart(2, "0")}
           </span>
         </div>
       </div>
 
-      {/* DESKTOP / TABLET horizontal */}
+      {/* DESKTOP */}
       <div ref={pinRef} className="relative hidden md:block">
         <div
           ref={trackRef}
@@ -432,8 +447,7 @@ export default function CinematicGallery() {
                 key={`${frame.title}-${i}`}
                 className="ttl-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center"
               >
-                <div className="relative flex h-full w-full max-w-[1400px] items-center justify-center gap-3 px-4 lg:gap-8 lg:px-10 xl:gap-10 xl:px-12">
-                  {/* left sat — from lg */}
+                <div className="relative flex h-full w-full max-w-[1400px] items-center justify-center gap-3 px-4 lg:gap-8 lg:px-10 xl:gap-10">
                   <div className="ttl-sat relative hidden h-[22vh] w-[22vh] flex-shrink-0 lg:block xl:h-[26vh] xl:w-[26vh]">
                     <div className="pointer-events-none absolute inset-[-10%] z-20 text-gold/35">
                       <ApertureRing className="h-full w-full" blades={6} opacity={0.12} />
@@ -442,21 +456,15 @@ export default function CinematicGallery() {
                       className="ttl-sat-iris relative z-10 h-full w-full overflow-hidden rounded-full"
                       style={{ clipPath: "circle(0% at 50% 50%)" }}
                     >
-                      <img
-                        src={prev.src}
-                        alt=""
-                        className="ttl-sat-img h-full w-full object-cover opacity-70"
-                        loading="lazy"
-                      />
+                      <img src={prev.src} alt="" className="ttl-sat-img h-full w-full object-cover opacity-70" loading="lazy" />
                       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_30%,rgba(0,0,0,0.75)_100%)]" />
                     </div>
                   </div>
 
-                  {/* MAIN */}
                   <div className="relative flex aspect-square w-[min(68vw,62vh)] max-w-[720px] flex-shrink-0 items-center justify-center lg:w-[min(52vw,68vh)]">
                     <MultiRings prefix="ring" />
                     <div
-                      className="ttl-main-iris relative z-10 h-[84%] w-[84%] overflow-hidden rounded-full shadow-[0_0_60px_rgba(197,168,128,0.1)] sm:h-[82%] sm:w-[82%]"
+                      className="ttl-main-iris relative z-10 h-[84%] w-[84%] overflow-hidden rounded-full shadow-[0_0_60px_rgba(197,168,128,0.1)]"
                       style={{ clipPath: "circle(0% at 50% 50%)" }}
                     >
                       <img
@@ -467,20 +475,19 @@ export default function CinematicGallery() {
                       />
                       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_38%,rgba(0,0,0,0.8)_100%)]" />
                     </div>
-                    <div className="ttl-meta pointer-events-none absolute left-0 right-0 top-full z-30 pt-6 text-center sm:pt-8 lg:pt-10">
-                      <p className="font-mono text-[10px] tracking-[0.35em] text-gold/80 sm:text-[11px] sm:tracking-[0.4em]">
+                    <div className="ttl-meta pointer-events-none absolute left-0 right-0 top-full z-30 pt-8 text-center lg:pt-10">
+                      <p className="font-mono text-[11px] tracking-[0.4em] text-gold/80">
                         {String(i + 1).padStart(2, "0")}
                       </p>
-                      <h3 className="mt-1.5 font-serif text-2xl font-light tracking-[0.06em] sm:mt-2 sm:text-3xl lg:text-4xl">
+                      <h3 className="mt-2 font-serif text-3xl font-light tracking-[0.06em] lg:text-4xl">
                         {frame.title}
                       </h3>
-                      <p className="mt-1.5 text-[10px] uppercase tracking-[0.25em] text-white/45 sm:mt-2 sm:text-[11px] sm:tracking-[0.3em]">
+                      <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-white/45">
                         {frame.sub}
                       </p>
                     </div>
                   </div>
 
-                  {/* right sat — from lg */}
                   <div className="ttl-sat relative hidden h-[22vh] w-[22vh] flex-shrink-0 lg:block xl:h-[26vh] xl:w-[26vh]">
                     <div className="pointer-events-none absolute inset-[-10%] z-20 text-gold/35">
                       <ApertureRing className="h-full w-full" blades={8} opacity={0.12} />
@@ -489,12 +496,7 @@ export default function CinematicGallery() {
                       className="ttl-sat-iris relative z-10 h-full w-full overflow-hidden rounded-full"
                       style={{ clipPath: "circle(0% at 50% 50%)" }}
                     >
-                      <img
-                        src={next.src}
-                        alt=""
-                        className="ttl-sat-img h-full w-full object-cover opacity-70"
-                        loading="lazy"
-                      />
+                      <img src={next.src} alt="" className="ttl-sat-img h-full w-full object-cover opacity-70" loading="lazy" />
                       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_30%,rgba(0,0,0,0.75)_100%)]" />
                     </div>
                   </div>
@@ -505,41 +507,41 @@ export default function CinematicGallery() {
         </div>
       </div>
 
-      {/* MOBILE */}
-      <div className="relative grid grid-cols-1 gap-12 px-4 pb-14 pt-2 sm:grid-cols-2 sm:gap-8 sm:px-6 md:hidden">
+      {/* MOBILE — single column, always-visible circular photos */}
+      <div className="relative flex flex-col items-center gap-10 px-5 pb-12 pt-2 md:hidden">
         {FRAMES.map((frame, i) => (
-          <div key={`m-${frame.title}-${i}`} className="ttl-m-card relative mx-auto w-full max-w-sm">
-            <div className="relative mx-auto aspect-square w-full max-w-[min(100%,340px)]">
-              <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-5%] z-20 text-gold/45">
-                <ApertureRing className="h-full w-full" blades={6} />
+          <div
+            key={`m-${frame.title}-${i}`}
+            className="ttl-m-card w-full max-w-[300px]"
+          >
+            {/* padding so outer rings stay inside card box */}
+            <div className="relative mx-auto aspect-square w-[78%] max-w-[240px]">
+              <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-8%] z-20 text-gold/40">
+                <ApertureRing className="h-full w-full" blades={6} opacity={0.14} />
               </div>
-              <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-14%] z-20 text-gold/25">
-                <ApertureRing className="h-full w-full" blades={8} opacity={0.1} />
+              <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-16%] z-20 text-gold/22">
+                <ApertureRing className="h-full w-full" blades={8} opacity={0.08} />
               </div>
-              <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-22%] z-20 text-gold/12">
-                <ApertureRing className="h-full w-full" blades={6} opacity={0.06} />
-              </div>
-              <div
-                className="ttl-m-iris relative z-10 h-full w-full overflow-hidden rounded-full"
-                style={{ clipPath: "circle(0% at 50% 50%)" }}
-              >
+
+              <div className="ttl-m-photo relative z-10 h-full w-full overflow-hidden rounded-full ring-1 ring-gold/20">
                 <img
                   src={frame.src}
                   alt={frame.title}
                   className="h-full w-full object-cover"
-                  loading="lazy"
+                  loading={i < 3 ? "eager" : "lazy"}
                 />
-                <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_35%,rgba(0,0,0,0.75)_100%)]" />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.55)_100%)]" />
               </div>
             </div>
-            <div className="mt-6 text-center sm:mt-7">
+
+            <div className="ttl-m-text mt-5 text-center">
               <p className="font-mono text-[10px] tracking-[0.3em] text-gold/70">
                 {String(i + 1).padStart(2, "0")}
               </p>
-              <h3 className="mt-1 font-serif text-xl font-light tracking-wide sm:text-2xl">
+              <h3 className="mt-1 font-serif text-xl font-light tracking-wide">
                 {frame.title}
               </h3>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-white/45 sm:text-[11px]">
+              <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-white/45">
                 {frame.sub}
               </p>
             </div>
@@ -547,10 +549,10 @@ export default function CinematicGallery() {
         ))}
       </div>
 
-      <div className="relative z-10 flex justify-center pb-16 pt-6 sm:pb-20 sm:pt-8">
+      <div className="relative z-10 flex justify-center pb-14 pt-4 md:pb-20 md:pt-8">
         <Link
           to="/gallery"
-          className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors hover:text-gold sm:text-[11px] sm:tracking-[0.35em]"
+          className="text-[10px] uppercase tracking-[0.3em] text-white/40 transition-colors hover:text-gold sm:text-[11px]"
         >
           Full gallery →
         </Link>
