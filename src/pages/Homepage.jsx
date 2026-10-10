@@ -1,6 +1,9 @@
 import { lazy, Suspense } from "react";
 import HeroSection from "../pageComponents/homepage/Herosection";
 
+const CinematicGallery = lazy(() =>
+  import("../pageComponents/homepage/CinematicGallery")
+);
 const AlbumCollection = lazy(() =>
   import("../pageComponents/homepage/AlbumCollection")
 );
@@ -23,6 +26,10 @@ export default function Homepage() {
     <>
       {/* Hero: video only — untouched */}
       <HeroSection />
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <CinematicGallery />
+      </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
         <AlbumCollection />
