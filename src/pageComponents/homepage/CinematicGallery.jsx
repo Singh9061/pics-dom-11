@@ -1,17 +1,7 @@
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
-import * as THREE from "three";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Link } from "react-router-dom";
 import {
   c1_pic1,
   c1_pic3,
@@ -24,7 +14,7 @@ import { c2_pic2, c2_pic11 } from "../../Assets/picture/client2";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const WORLDS = [
+const FRAMES = [
   { src: c1_pic10, title: "Sacred Phere", sub: "Heritage Ritual" },
   { src: c2_pic2, title: "Royal Baraat", sub: "Procession" },
   { src: c1_pic1, title: "Crimson Sindoor", sub: "Intimate" },
@@ -35,528 +25,265 @@ const WORLDS = [
   { src: c1_pic3, title: "Quiet Glance", sub: "Candid" },
 ];
 
-const SPACING = 16;
+export default function CinematicGallery() {
+  const rootRef = useRef(null);
+  const pinRef = useRef(null);
+  const trackRef = useRef(null);
+  const progressRef = useRef(null);
+  const labelRef = useRef(null);
+  const [active, setActive] = useState(0);
 
-function playTone(freq, dur, type, vol) {
-  try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type || "sine";
-    o.frequency.value = freq;
-    g.gain.value = vol || 0.04;
-    o.connect(g);
-    g.connect(ctx.destination);
-    o.start();
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    o.stop(ctx.currentTime + dur);
-  } catch (_) {}
-}
-
-function playShutter() {
-  playTone(200, 0.07, "triangle", 0.05);
-  setTimeout(() => playTone(85, 0.14, "square", 0.025), 35);
-}
-
-/* ---- volumetric photo: main plane + soft depth layers ---- */
-function PhotoWorld({
-  url,
-  index,
-  activeIndex,
-  mouse,
-  breakAmount,
-}) {
-  const tex = useTexture(url);
-  const group = useRef();
-  const main = useRef();
-  const back = useRef();
-  const fore = useRef();
-
-  useMemo(() => {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
-  }, [tex]);
-
-  useFrame(() => {
-    if (!group.current) return;
-    const on = index === activeIndex;
-    const focus = on ? 1 : 0.25;
-
-    // multi-layer parallax (depth-map feel without AI maps)
-    const mx = mouse.current.x;
-    const my = mouse.current.y;
-    if (back.current) {
-      back.current.position.x = mx * -0.35;
-      back.current.position.y = my * -0.2;
-      back.current.material.opacity = THREE.MathUtils.lerp(
-        back.current.material.opacity,
-        on ? 0.45 : 0.1,
-        0.08
-      );
-    }
-    if (main.current) {
-      main.current.position.x = mx * 0.15;
-      main.current.position.y = my * 0.1;
-      main.current.material.opacity = THREE.MathUtils.lerp(
-        main.current.material.opacity,
-        on ? 1 - breakAmount.current * 0.9 : 0.2,
-        0.1
-      );
-      main.current.scale.setScalar(
-        THREE.MathUtils.lerp(main.current.scale.x, on ? 1 : 0.85, 0.08)
-      );
-    }
-    if (fore.current) {
-      fore.current.position.x = mx * 0.55;
-      fore.current.position.y = my * 0.35;
-      fore.current.material.opacity = THREE.MathUtils.lerp(
-        fore.current.material.opacity,
-        on ? 0.22 : 0.05,
-        0.08
-      );
-    }
-
-    group.current.rotation.y = THREE.MathUtils.lerp(
-      group.current.rotation.y,
-      mx * 0.2 * focus,
-      0.08
-    );
-    group.current.rotation.x = THREE.MathUtils.lerp(
-      group.current.rotation.x,
-      -my * 0.12 * focus,
-      0.08
-    );
-  });
-
-  const z = -index * SPACING;
-
-  return (
-    <group ref={group} position={[0, 0, z]}>
-      {/* environment / background layer */}
-      <mesh ref={back} position={[0, 0, -0.8]} scale={[5.2, 3.5, 1]}>
-        <planeGeometry />
-        <meshBasicMaterial
-          map={tex}
-          transparent
-          opacity={0.1}
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      {/* subject */}
-      <mesh ref={main} position={[0, 0, 0]} scale={[4.4, 2.9, 1]}>
-        <planeGeometry />
-        <meshBasicMaterial
-          map={tex}
-          transparent
-          opacity={0.2}
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      {/* foreground glass / near layer */}
-      <mesh ref={fore} position={[0, 0, 0.6]} scale={[4.6, 3.05, 1]}>
-        <planeGeometry />
-        <meshBasicMaterial
-          map={tex}
-          transparent
-          opacity={0.05}
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-/* particle field — used for dust + break/rebuild */
-function ParticleField({ count = 500, breakAmount, mouse }) {
-  const ref = useRef();
-  const positions = useMemo(() => {
-    const arr = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * 24;
-      arr[i * 3 + 1] = (Math.random() - 0.5) * 12;
-      arr[i * 3 + 2] = -Math.random() * (WORLDS.length * SPACING + 10);
-    }
-    return arr;
-  }, [count]);
-
-  useFrame((_, dt) => {
-    if (!ref.current) return;
-    ref.current.rotation.y += dt * 0.015;
-    const s = 1 + breakAmount.current * 2.5;
-    ref.current.scale.setScalar(THREE.MathUtils.lerp(ref.current.scale.x, s, 0.08));
-    ref.current.position.x = mouse.current.x * 0.3;
-    ref.current.position.y = mouse.current.y * 0.2;
-  });
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.04}
-        color="#c5a880"
-        transparent
-        opacity={0.5}
-        depthWrite={false}
-        sizeAttenuation
-      />
-    </points>
-  );
-}
-
-function CameraRig({ progress, mouse }) {
-  const { camera } = useThree();
-  useFrame(() => {
-    const z = -progress.current * SPACING + 5.5;
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, z, 0.07);
-    camera.position.x = THREE.MathUtils.lerp(
-      camera.position.x,
-      mouse.current.x * 0.9,
-      0.05
-    );
-    camera.position.y = THREE.MathUtils.lerp(
-      camera.position.y,
-      mouse.current.y * 0.45,
-      0.05
-    );
-    camera.lookAt(
-      mouse.current.x * 0.35,
-      mouse.current.y * 0.2,
-      z - SPACING * 0.4
-    );
-  });
-  return null;
-}
-
-function UniverseScene({ progress, mouse, activeIndex, breakAmount }) {
-  return (
-    <>
-      <color attach="background" args={["#040208"]} />
-      <ambientLight intensity={1} />
-      <ParticleField breakAmount={breakAmount} mouse={mouse} />
-      <CameraRig progress={progress} mouse={mouse} />
-      {WORLDS.map((w, i) => (
-        <PhotoWorld
-          key={w.title}
-          url={w.src}
-          index={i}
-          activeIndex={activeIndex}
-          mouse={mouse}
-          breakAmount={breakAmount}
-        />
-      ))}
-    </>
-  );
-}
-
-/* ---- Full 4D immersive mode ---- */
-function FourDMode({ onExit }) {
-  const progress = useRef(0);
-  const mouse = useRef({ x: 0, y: 0 });
-  const breakAmount = useRef(0);
-  const apertureRef = useRef(null);
-  const veilRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [title, setTitle] = useState(WORLDS[0].title);
-  const [sub, setSub] = useState(WORLDS[0].sub);
-  const lastIndex = useRef(0);
-  const transitioning = useRef(false);
-
-  // aperture open on enter
   useEffect(() => {
-    const el = apertureRef.current;
-    if (!el) return;
-    gsap.fromTo(
-      el,
-      { clipPath: "circle(0% at 50% 50%)" },
-      {
-        clipPath: "circle(150% at 50% 50%)",
-        duration: 1.5,
-        ease: "power3.inOut",
-      }
-    );
-    playShutter();
-  }, []);
+    const root = rootRef.current;
+    if (!root) return;
 
-  // signature: Capture → Freeze → Break → Rebuild on world change
-  const triggerBreakRebuild = useCallback((nextIdx) => {
-    if (transitioning.current) return;
-    transitioning.current = true;
-    playShutter();
-    const obj = { v: 0 };
-    gsap
-      .timeline({
-        onComplete: () => {
-          transitioning.current = false;
-          breakAmount.current = 0;
-        },
-      })
-      .to(obj, {
-        v: 1,
-        duration: 0.35,
-        ease: "power2.in",
-        onUpdate: () => {
-          breakAmount.current = obj.v;
-        },
-      })
-      .add(() => {
-        setActiveIndex(nextIdx);
-        setTitle(WORLDS[nextIdx].title);
-        setSub(WORLDS[nextIdx].sub);
-      })
-      .to(obj, {
-        v: 0,
-        duration: 0.55,
-        ease: "power2.out",
-        onUpdate: () => {
-          breakAmount.current = obj.v;
+    const ctx = gsap.context(() => {
+      /* heading entrance */
+      gsap.from(".ttl-head > *", {
+        y: 60,
+        opacity: 0,
+        filter: "blur(14px)",
+        duration: 1.3,
+        stagger: 0.14,
+        ease: "power4.out",
+        scrollTrigger: {
+          trigger: ".ttl-head",
+          start: "top 85%",
         },
       });
-  }, []);
 
-  useEffect(() => {
-    const onMove = (e) => {
-      mouse.current.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    };
+      const mm = gsap.matchMedia();
 
-    const onWheel = (e) => {
-      e.preventDefault();
-      if (transitioning.current) return;
-      const next =
-        progress.current + (e.deltaY > 0 ? 0.045 : -0.045);
-      progress.current = THREE.MathUtils.clamp(
-        next,
-        0,
-        WORLDS.length - 1.001
-      );
-      const idx = Math.round(progress.current);
-      if (idx !== lastIndex.current) {
-        lastIndex.current = idx;
-        triggerBreakRebuild(idx);
-      }
-    };
+      /* ── DESKTOP: pinned horizontal scroll ── */
+      mm.add("(min-width: 768px)", () => {
+        const track = trackRef.current;
+        const pin = pinRef.current;
+        if (!track || !pin) return;
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("wheel", onWheel, { passive: false });
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("wheel", onWheel);
-    };
-  }, [triggerBreakRebuild]);
+        const getTotal = () => Math.max(0, track.scrollWidth - window.innerWidth);
 
-  const onCreated = useCallback(({ gl }) => {
-    gl.setClearColor("#040208");
-  }, []);
+        gsap.to(track, {
+          x: () => -getTotal(),
+          ease: "none",
+          scrollTrigger: {
+            trigger: pin,
+            start: "top top",
+            end: () => `+=${getTotal() * 1.45}`,
+            scrub: 1.2,
+            pin: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              const idx = Math.min(
+                FRAMES.length - 1,
+                Math.floor(self.progress * FRAMES.length)
+              );
+              setActive(idx);
+              if (progressRef.current) {
+                progressRef.current.style.width = `${self.progress * 100}%`;
+              }
+              if (labelRef.current) {
+                labelRef.current.textContent = `${String(idx + 1).padStart(2, "0")} / ${String(FRAMES.length).padStart(2, "0")}`;
+              }
+            },
+          },
+        });
 
-  return (
-    <div className="fixed inset-0 z-[9999] bg-black">
-      <div
-        ref={apertureRef}
-        className="absolute inset-0 z-30 bg-black"
-        style={{ clipPath: "circle(0% at 50% 50%)" }}
-      />
+        gsap.utils.toArray(".ttl-panel").forEach((panel, i) => {
+          const img = panel.querySelector(".ttl-img");
+          const meta = panel.querySelector(".ttl-meta");
 
-      <Canvas
-        camera={{ position: [0, 0, 6], fov: 48, near: 0.1, far: 250 }}
-        dpr={[1, 1.5]}
-        gl={{
-          antialias: true,
-          alpha: false,
-          powerPreference: "high-performance",
-        }}
-        onCreated={onCreated}
-      >
-        <Suspense fallback={null}>
-          <UniverseScene
-            progress={progress}
-            mouse={mouse}
-            activeIndex={activeIndex}
-            breakAmount={breakAmount}
-          />
-        </Suspense>
-      </Canvas>
+          if (img) {
+            gsap.fromTo(
+              img,
+              {
+                scale: 1.35,
+                filter: "blur(18px)",
+                opacity: 0.35,
+              },
+              {
+                scale: 1,
+                filter: "blur(0px)",
+                opacity: 1,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: pin,
+                  start: () => `top+=${(i / FRAMES.length) * getTotal() * 1.2} top`,
+                  end: () => `top+=${((i + 0.7) / FRAMES.length) * getTotal() * 1.2} top`,
+                  scrub: 1.4,
+                },
+              }
+            );
+          }
 
-      {/* lens simulation overlays */}
-      <div className="pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_140px_rgba(0,0,0,0.8)]" />
-      <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.6)_100%)]" />
-      <div
-        ref={veilRef}
-        className="pointer-events-none absolute inset-0 z-10 opacity-[0.1] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            "url(data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E)",
-          backgroundSize: "150px",
-        }}
-      />
-
-      {/* HUD */}
-      <div className="absolute left-6 top-6 z-40 md:left-12 md:top-10">
-        <p className="text-[10px] uppercase tracking-[0.45em] text-gold/70">
-          Pics Dom · 4D Universe
-        </p>
-        <h3 className="mt-2 font-serif text-2xl font-light tracking-[0.1em] text-white md:text-4xl">
-          {title}
-        </h3>
-        <p className="mt-1 text-[11px] uppercase tracking-[0.28em] text-white/45">
-          {sub}
-        </p>
-        <p className="mt-4 text-[10px] tracking-[0.3em] text-white/30">
-          {String(activeIndex + 1).padStart(2, "0")} /{" "}
-          {String(WORLDS.length).padStart(2, "0")}
-        </p>
-      </div>
-
-      <div className="absolute bottom-8 left-0 right-0 z-40 flex flex-col items-center gap-3">
-        <p className="text-[10px] uppercase tracking-[0.35em] text-white/40">
-          Scroll · travel through worlds · Move · look
-        </p>
-        <div className="h-px w-56 bg-white/10">
-          <div
-            className="h-full bg-gold transition-all duration-500"
-            style={{
-              width: ((activeIndex + 1) / WORLDS.length) * 100 + "%",
-            }}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            playShutter();
-            onExit();
-          }}
-          className="mt-2 border border-white/25 px-7 py-2 text-[10px] uppercase tracking-[0.3em] text-white/75 transition-colors hover:border-gold hover:text-gold"
-        >
-          Exit 4D Mode
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ---- Normal site section + entry ---- */
-export default function CinematicGallery() {
-  const [mode4d, setMode4d] = useState(false);
-  const sectionRef = useRef(null);
-  const cardsRef = useRef([]);
-
-  useEffect(() => {
-    document.body.style.overflow = mode4d ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mode4d]);
-
-  useEffect(() => {
-    const cards = cardsRef.current.filter(Boolean);
-    if (!cards.length) return;
-    const ctx = gsap.context(() => {
-      cards.forEach((el, i) => {
-        gsap.from(el, {
-          y: 50,
-          opacity: 0,
-          duration: 0.85,
-          delay: i * 0.06,
-          ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 92%" },
+          if (meta) {
+            gsap.fromTo(
+              meta,
+              { y: 80, opacity: 0, filter: "blur(12px)" },
+              {
+                y: 0,
+                opacity: 1,
+                filter: "blur(0px)",
+                ease: "none",
+                scrollTrigger: {
+                  trigger: pin,
+                  start: () => `top+=${(i / FRAMES.length) * getTotal() * 1.2} top`,
+                  end: () => `top+=${((i + 0.55) / FRAMES.length) * getTotal() * 1.2} top`,
+                  scrub: 1.2,
+                },
+              }
+            );
+          }
         });
       });
-    }, sectionRef);
+
+      /* ── MOBILE: stacked heavy reveals ── */
+      mm.add("(max-width: 767px)", () => {
+        gsap.utils.toArray(".ttl-m-card").forEach((card) => {
+          gsap.fromTo(
+            card,
+            {
+              y: 100,
+              opacity: 0,
+              scale: 0.9,
+              filter: "blur(16px)",
+            },
+            {
+              y: 0,
+              opacity: 1,
+              scale: 1,
+              filter: "blur(0px)",
+              duration: 1.25,
+              ease: "power4.out",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 90%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        });
+      });
+    }, root);
+
     return () => ctx.revert();
   }, []);
 
   return (
-    <>
-      <section
-        ref={sectionRef}
-        className="relative overflow-hidden bg-[#08060c] py-24 md:py-32"
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(90,40,110,0.22)_0%,transparent_55%)]" />
+    <section
+      ref={rootRef}
+      className="relative overflow-hidden bg-[#050308] text-white"
+    >
+      {/* ambient glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.1)_0%,transparent_55%)]" />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 text-center md:px-8">
-          <p className="text-[10px] uppercase tracking-[0.45em] text-gold/70">
-            Signature Experience
-          </p>
-          <h2 className="mt-3 font-serif text-3xl font-light tracking-[0.12em] text-white md:text-5xl">
-            Through the lens
-          </h2>
-          <p className="mx-auto mt-4 max-w-md text-sm text-white/40">
-            Normal site stays fast. Enter 4D Mode when you want the full
-            photography universe — portal travel, depth, lens.
-          </p>
+      {/* section heading */}
+      <div className="ttl-head relative z-10 mx-auto max-w-4xl px-6 pb-8 pt-28 text-center md:pt-36">
+        <p className="text-[10px] uppercase tracking-[0.5em] text-gold/70">
+          Signature Experience
+        </p>
+        <h2 className="mt-4 font-serif text-4xl font-light tracking-[0.1em] md:text-6xl">
+          Through the <span className="font-semibold italic text-gold">lens</span>
+        </h2>
+        <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-white/40 font-light">
+          Scroll to travel through frames — every moment intentional.
+        </p>
+      </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              playShutter();
-              setMode4d(true);
-            }}
-            className="mt-10 inline-flex items-center gap-3 border border-gold/60 bg-gold/10 px-12 py-4 text-[11px] uppercase tracking-[0.4em] text-gold transition-all duration-300 hover:bg-gold hover:text-black"
+      {/* progress (desktop) */}
+      <div className="pointer-events-none fixed left-0 right-0 top-0 z-40 hidden h-[2px] bg-white/5 md:block">
+        <div
+          ref={progressRef}
+          className="h-full bg-gold"
+          style={{ width: "0%" }}
+        />
+      </div>
+      <div className="pointer-events-none fixed bottom-8 right-6 z-40 hidden md:block">
+        <div className="rounded-full border border-gold/25 bg-black/70 px-5 py-2.5 backdrop-blur-xl">
+          <span
+            ref={labelRef}
+            className="font-mono text-[11px] tracking-[0.3em] text-gold"
           >
-            Enter 4D Mode
-          </button>
-
-          <div className="mt-16 grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
-            {WORLDS.slice(0, 4).map((w, i) => (
-              <button
-                key={w.title}
-                type="button"
-                ref={(el) => {
-                  cardsRef.current[i] = el;
-                }}
-                onClick={() => {
-                  playShutter();
-                  setMode4d(true);
-                }}
-                className="group relative aspect-4/3 overflow-hidden bg-black text-left"
-              >
-                <img
-                  src={w.src}
-                  alt={w.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/75 to-transparent" />
-                <span className="absolute bottom-3 left-3 text-[10px] uppercase tracking-[0.2em] text-white/85">
-                  {w.title}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-10">
-            <Link
-              to="/gallery"
-              className="text-[11px] uppercase tracking-[0.3em] text-white/40 transition-colors hover:text-gold"
-            >
-              Classic gallery →
-            </Link>
-          </div>
+            01 / 08
+          </span>
         </div>
-      </section>
+      </div>
 
-      {mode4d && (
-        <Suspense
-          fallback={
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black text-sm tracking-widest text-white/40">
-              OPENING APERTURE…
-            </div>
-          }
+      {/* ════════ DESKTOP pinned horizontal ════════ */}
+      <div ref={pinRef} className="relative hidden md:block">
+        <div
+          ref={trackRef}
+          className="flex h-screen will-change-transform"
+          style={{ width: `${FRAMES.length * 100}vw` }}
         >
-          <FourDMode onExit={() => setMode4d(false)} />
-        </Suspense>
-      )}
-    </>
+          {FRAMES.map((frame, i) => (
+            <div
+              key={frame.title}
+              className="ttl-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center px-10 lg:px-20"
+            >
+              <div className="relative h-[70vh] w-full max-w-5xl overflow-hidden rounded-sm">
+                <img
+                  src={frame.src}
+                  alt={frame.title}
+                  className="ttl-img absolute inset-0 h-full w-full object-cover"
+                  loading={i < 2 ? "eager" : "lazy"}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="ttl-meta absolute bottom-0 left-0 right-0 p-8 lg:p-12">
+                  <p className="font-mono text-[11px] tracking-[0.4em] text-gold/80">
+                    {String(i + 1).padStart(2, "0")}
+                  </p>
+                  <h3 className="mt-2 font-serif text-3xl font-light tracking-[0.08em] lg:text-5xl">
+                    {frame.title}
+                  </h3>
+                  <p className="mt-2 text-[12px] uppercase tracking-[0.3em] text-white/50">
+                    {frame.sub}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ════════ MOBILE vertical cards ════════ */}
+      <div className="relative space-y-8 px-5 pb-16 pt-4 md:hidden">
+        {FRAMES.map((frame, i) => (
+          <div
+            key={frame.title}
+            className="ttl-m-card relative aspect-[4/5] overflow-hidden rounded-sm"
+          >
+            <img
+              src={frame.src}
+              alt={frame.title}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <p className="font-mono text-[10px] tracking-[0.35em] text-gold/70">
+                {String(i + 1).padStart(2, "0")}
+              </p>
+              <h3 className="mt-1 font-serif text-2xl font-light tracking-wide">
+                {frame.title}
+              </h3>
+              <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-white/45">
+                {frame.sub}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* footer link */}
+      <div className="relative z-10 flex justify-center pb-20 pt-6">
+        <Link
+          to="/gallery"
+          className="text-[11px] uppercase tracking-[0.35em] text-white/40 transition-colors hover:text-gold"
+        >
+          Full gallery →
+        </Link>
+      </div>
+    </section>
   );
 }
