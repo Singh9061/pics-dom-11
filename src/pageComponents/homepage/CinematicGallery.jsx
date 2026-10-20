@@ -387,7 +387,7 @@ export default function CinematicGallery() {
         <p className="text-[9px] uppercase tracking-[0.4em] text-gold/70 sm:text-[10px]">
           Signature Experience
         </p>
-        <h2 id="cinematic-gallery-title" className="mt-2 font-serif text-[1.75rem] font-light leading-tight tracking-[0.06em] sm:mt-3 sm:text-4xl md:text-6xl">
+        <h2 id="cinematic-gallery-title" id="cinematic-gallery-title" className="mt-2 font-serif text-[1.75rem] font-light leading-tight tracking-[0.06em] sm:mt-3 sm:text-4xl md:text-6xl">
           Through the <span className="font-semibold italic text-gold">lens</span>
         </h2>
         <p className="mx-auto mt-3 max-w-sm text-[11px] leading-5 text-white/40 font-light sm:mt-4 sm:text-sm sm:leading-7">
