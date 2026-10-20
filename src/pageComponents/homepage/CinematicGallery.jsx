@@ -64,6 +64,9 @@ export default function CinematicGallery() {
     const root = rootRef.current;
     if (!root) return;
 
+    // Respect the visitor's system accessibility preference and avoid scroll-linked motion.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     const ctx = gsap.context(() => {
       gsap.from(".ttl-head > *", {
         y: 50,
@@ -154,7 +157,7 @@ export default function CinematicGallery() {
           if (mainImg) {
             gsap.fromTo(
               mainImg,
-              { scale: 1.5, filter: "blur(20px)", rotate: -3 },
+              { scale: 1.35, filter: "blur(8px)", rotate: -2 },
               {
                 scale: 1,
                 filter: "blur(0px)",
@@ -251,7 +254,7 @@ export default function CinematicGallery() {
             if (satImg) {
               gsap.fromTo(
                 satImg,
-                { scale: 1.35, filter: "blur(10px)" },
+                { scale: 1.2, filter: "blur(4px)" },
                 {
                   scale: 1,
                   filter: "blur(0px)",
@@ -366,7 +369,7 @@ export default function CinematicGallery() {
   }, []);
 
   return (
-    <section ref={rootRef} className="relative overflow-x-hidden bg-[#050308] text-white">
+    <section ref={rootRef} aria-labelledby="cinematic-gallery-title" className="relative overflow-x-clip bg-[#050308] text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,168,128,0.12)_0%,transparent_55%)]" />
 
       <div className="ttl-head relative z-10 mx-auto max-w-4xl px-5 pb-6 pt-20 text-center sm:px-6 sm:pb-8 sm:pt-24 md:pb-12 md:pt-36">
@@ -384,7 +387,7 @@ export default function CinematicGallery() {
         <p className="text-[9px] uppercase tracking-[0.4em] text-gold/70 sm:text-[10px]">
           Signature Experience
         </p>
-        <h2 className="mt-2 font-serif text-[1.75rem] font-light leading-tight tracking-[0.06em] sm:mt-3 sm:text-4xl md:text-6xl">
+        <h2 id="cinematic-gallery-title" className="mt-2 font-serif text-[1.75rem] font-light leading-tight tracking-[0.06em] sm:mt-3 sm:text-4xl md:text-6xl">
           Through the <span className="font-semibold italic text-gold">lens</span>
         </h2>
         <p className="mx-auto mt-3 max-w-sm text-[11px] leading-5 text-white/40 font-light sm:mt-4 sm:text-sm sm:leading-7">
@@ -425,8 +428,8 @@ export default function CinematicGallery() {
                     </div>
                     <div
                       className="ttl-sat-iris relative z-10 h-full w-full overflow-hidden rounded-full"
-                      style={{ clipPath: "circle(0% at 50% 50%)" }}
-                    >
+                      >
+
                       <img src={prev.src} alt="" className="ttl-sat-img h-full w-full object-cover opacity-70" loading="lazy" />
                       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_30%,rgba(0,0,0,0.75)_100%)]" />
                     </div>
@@ -436,13 +439,15 @@ export default function CinematicGallery() {
                     <MultiRings prefix="ring" />
                     <div
                       className="ttl-main-iris relative z-10 h-[84%] w-[84%] overflow-hidden rounded-full shadow-[0_0_60px_rgba(197,168,128,0.1)]"
-                      style={{ clipPath: "circle(0% at 50% 50%)" }}
-                    >
+                      >
+
                       <img
                         src={frame.src}
                         alt={frame.title}
                         className="ttl-main-img absolute inset-0 h-full w-full object-cover"
-                        loading="eager"
+                        loading={i === 0 ? "eager" : "lazy"}
+                        decoding="async"
+                        fetchPriority={i === 0 ? "high" : "auto"}
                       />
                       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_38%,rgba(0,0,0,0.8)_100%)]" />
                     </div>
@@ -465,8 +470,8 @@ export default function CinematicGallery() {
                     </div>
                     <div
                       className="ttl-sat-iris relative z-10 h-full w-full overflow-hidden rounded-full"
-                      style={{ clipPath: "circle(0% at 50% 50%)" }}
-                    >
+                      >
+
                       <img src={next.src} alt="" className="ttl-sat-img h-full w-full object-cover opacity-70" loading="lazy" />
                       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_30%,rgba(0,0,0,0.75)_100%)]" />
                     </div>
@@ -480,8 +485,8 @@ export default function CinematicGallery() {
 
       <div className="relative flex flex-col items-center gap-10 px-5 pb-12 pt-2 md:hidden">
         {FRAMES.map((frame, i) => (
-          <div key={`m-${frame.title}-${i}`} className="ttl-m-card w-full max-w-[300px]">
-            <div className="relative mx-auto aspect-square w-[78%] max-w-[240px]">
+          <div key={`m-${frame.title}-${i}`} className="ttl-m-card w-full max-w-[min(88vw,360px)]">
+            <div className="relative mx-auto aspect-square w-[78%] max-w-[280px]">
               <div className="ttl-m-ring-layer pointer-events-none absolute inset-[-8%] z-20 text-gold/40">
                 <ApertureRing className="h-full w-full" blades={6} opacity={0.14} />
               </div>
@@ -493,7 +498,9 @@ export default function CinematicGallery() {
                   src={frame.src}
                   alt={frame.title}
                   className="h-full w-full object-cover"
-                  loading="eager"
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={i === 0 ? "high" : "auto"}
                 />
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.55)_100%)]" />
               </div>
