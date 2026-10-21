@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FiCamera, FiArrowRight, FiUsers, FiHeart } from "react-icons/fi";
+import founderImg from "../Assets/founder.jpg";
 
 const values = [
     {
@@ -52,7 +53,7 @@ export default function About() {
             <section className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16 transform-gpu">
                 <div className="grid gap-16 lg:grid-cols-12 lg:items-start">
 
-                    {/* Large Left Floating Statement */}
+                    {/* Large Left Floating Statement + Founder Photo */}
                     <div
                         className={`lg:col-span-5 lg:sticky lg:top-28 transition-all duration-1000 delay-150 ease-out will-change-transform ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                             }`}
@@ -66,6 +67,20 @@ export default function About() {
                             <span className="font-semibold text-gold">heritage vision</span>.
                         </h2>
                         <div className="mt-8 hidden h-px w-24 bg-gold/30 lg:block" />
+
+                        {/* Founder Portrait */}
+                        <div className="mt-10 overflow-hidden rounded-sm border border-gold/15 bg-card shadow-sm">
+                            <img
+                                src={founderImg}
+                                alt="Pics Dom Founder — Raebareli"
+                                className="w-full aspect-[4/5] object-cover object-top"
+                                loading="lazy"
+                            />
+                            <div className="px-4 py-3 border-t border-gold/10">
+                                <p className="text-[11px] uppercase tracking-[0.25em] text-gold/80">Founder</p>
+                                <p className="mt-1 font-serif text-sm tracking-wide text-text">Pics Dom · Raebareli</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Long Form Copy */}
